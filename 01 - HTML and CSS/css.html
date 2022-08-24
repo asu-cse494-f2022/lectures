@@ -1,0 +1,74 @@
+<!--
+    CSS, or Cascading Style Sheets, is a language that is used to style the HTML elements on the browser. In other words, it's what you use to make your website look nice. :)
+    For a nice overview of what the "cascading" part of CSS means, see this video: https://www.youtube.com/watch?v=ndM8b-hnSwM
+    CSS doesn't require line breaks, but this is a generally accepted style. Lots of CSS and Javascript libraries are co-published as "min" versions that remove line breaks and whitespace. This makes the file smaller, so your browser can fetch and read it faster.  Here's an example: https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css
+-->
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>CSS example</title>
+        <style>
+            /*
+            h1 {
+                font-family:sans-serif;
+                color:green;
+                text-align:center;
+            } 
+            */
+        </style>
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <!-- We have two header tags here, one of which has some styling added. Try uncommenting the h1 styling above and you can it will be applied to both tags.  -->
+        <h1 style="color:maroon;text-align:center;">Welcome to CSE 494!</h1>
+        <h1>Second Header</h1>
+
+        <!--
+            Using a styles file.
+            You can put CSS in a styles file. This is especially handy for two reasons (1) It breaks up the page elements/structure (the HTML) with the styling (CSS). (2) When your website contains multiple pages, you can use 1 style file for all of them. This makes your code easier to manage and change.
+            Try uncommenting the styles.css link above.
+        -->
+        <hr>
+        <h2>Styles.css example</h2>
+        <p>
+            Lorem ipsum dolor sit amet, <span class="highlighted">consectetur adipiscing elit</span>. Sed mattis mauris nec scelerisque porta. In vitae bibendum diam, eu varius felis. Proin pharetra rutrum urna finibus venenatis. Vivamus eu lectus gravida est sollicitudin vehicula.  Morbi sit amet enim vel justo dignissim ultrices quis eu massa. In fermentum volutpat elit sit amet pharetra. 
+        </p>
+        <hr>
+
+        <!--
+            Examples of divs
+                A div is a "division" element. The styles.css file contains some styling for elements with the class contentDiv.
+                
+                By defualt, browsers will vertically stack divs on top of each other. There's a "float:left;" rule commented out. Try uncommenting it and see what happens. Is that the behavior you want? if you wanted other content to be on a new line, how could you fix it? (Hint: try wrapping the contentDivs inside another element). We'll look at how to lay out HTML content later in the class.
+        -->
+        <!-- <div style='display:inline-block'> -->
+        <div class="contentDiv">
+            Some content.
+        </div>
+        <div class="contentDiv">
+            Some more content.
+        </div>
+        <div class="contentDiv">
+            Even more content.
+        </div>
+
+        <!-- </div> -->
+        <hr>
+        <!--
+            The following paragraphs are styled using ID and class attributes. Try hovering over the bottom paragraph. This will call the 'hover' pseudoclass for the HTML element with id "bottom". Then try highlighting a section of the paragraph text with your mouse. This triggers the "selection" pseudoclass for <p> elements.
+            The W3 site lists several available pseudoclasses and pseudoelements. Try playing around with some of them on this page.
+            https://www.w3schools.com/css/css_pseudo_elements.asp
+            https://www.w3schools.com/css/css_pseudo_classes.asp
+        -->
+        <p id="top">
+            Lorem ipsum dolor sit amet, <span class="highlighted">consectetur adipiscing elit</span>. Sed mattis mauris nec scelerisque porta. In vitae bibendum diam, eu varius felis. Proin pharetra rutrum urna finibus venenatis. Vivamus eu lectus gravida est sollicitudin vehicula.  Morbi sit amet enim vel justo dignissim ultrices quis eu massa. In fermentum volutpat elit sit amet pharetra. 
+        </p>
+        <p id="middle">
+            Vivamus volutpat malesuada est, vel tempus sapien sollicitudin quis. Ut non purus vitae leo varius condimentum ac quis nibh. <span class="highlighted">Sed vehicula ultrices massa</span>, non vulputate ex venenatis suscipit.
+        </p>
+        <p id="bottom">
+            Sed volutpat commodo arcu eu commodo. Praesent in sem pellentesque, luctus erat nec, lobortis libero. Mauris posuere ante id facilisis efficitur. Praesent aliquet tincidunt vehicula. <span class="highlighted">Vivamus rhoncus consequat bibendum.</span>
+        </p>
+    </body>
+</html>

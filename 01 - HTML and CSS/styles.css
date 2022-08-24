@@ -1,0 +1,49 @@
+
+h2 {
+    text-align:center;
+    color:red;
+    font-family:sans-serif;
+}
+p {
+    color:darkcyan;
+}
+
+.contentDiv {
+    background-color:springgreen;
+    width:300px;
+    height:50px;
+    margin:30px;
+    padding:10px;
+    border: 1px solid black;
+    border-radius: 10px;
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    font-weight:bold;
+    /* float:left; */
+}
+
+#top {
+    font-size: 18px;
+    color: gray;
+}
+
+#middle {
+    font-size: 8px;
+}
+
+#bottom {
+    font-size: 14px;
+}
+
+.highlighted {
+    font-weight: bold;
+    background-color:yellow;
+    color: maroon;
+}
+#bottom:hover {
+    background-color:moccasin;
+}
+p::selection {
+    color: yellow;
+    background-color:maroon;
+} 

@@ -1,0 +1,156 @@
+<!-- The !DOCTYPE declaration is not an HTML tag. It is an "information" to the browser about what document type to expect. For HTML5 (the most recent version of HTML supported by browsers like Chrome, Firefox, Edge, etc.), you can write it like this.
+More info: https://www.geeksforgeeks.org/html-doctypes/ 
+-->
+<!DOCTYPE html>
+<!-- 
+    The html tag indicates the root HTML element. An HTML element is the collection of starting tag (e.g., <html>), all enclosed content, and ending tag (e.g., </html>). Most elements have an opening and closing tag, e.g. <html> and </html>. Most browsers can read tag names as case-insensitive, but the general style is to use lowercase. Tags can also have attributes, which are data fields (sometimes these are required) that help tell the browser how the data should be rendered.
+-->
+<html>
+    <!-- 
+        The <head> element container metadata for the page, such as the title, links to CSS style and Javascript scripts.
+    -->
+    <head>
+        <title>Welcome to CSE 494!</title>
+        <style>
+            /*  This defines a styling for "table" items on the page. */
+            table {
+                border: 2px solid black;
+                /* border-collapse: collapse; */ 
+                width: 500px;
+                /* Try uncommenting the above lines and see how the table styling changes. You can also use a percent, like 50% or 75%, instead of a pixel number. */
+            }
+            th, td {
+                border: 1px solid black;
+                padding: 5px;
+                text-align: center;
+            }
+            th {
+                background-color: lightgray;
+            }
+            hr {
+                border:5px solid green;
+            }
+        </style>
+    </head>
+    <body>
+        Hello, world!
+
+        <!-- Examples of headers (used for introductory content, like titles) -->
+        <h1>This is the largest headline</h1>
+		<h2>This is also a large headline</h2>
+		<h3>This is a slightly smaller headline</h3>
+		<h4>This is an even smaller headline</h4>
+		<h5>This is the second-smallest headline</h5>
+		<h6>This is the smallest headline</h6>
+
+        <!-- Examples of lists -->
+        An Unordered List:
+        <ul>
+            <li>One Item</li>
+            <li>Another Item</li>
+            <li>Yet Another Item</li>
+        </ul>
+        An Ordered List:
+        <ol>
+            <li>First Item</li>
+            <li>Second Item</li>
+            <li>Another Item Here</li>
+            <li>Fourth Item</li>
+        </ol>
+
+        <!-- Paragraph elements contain sections of text. Browsers usually render <p> elements with a single blank line before and after. -->
+        <p>
+            This is a paragraph.
+        </p>
+        <p style='color:blue'>
+            This is another paragraph with <span style='color:maroon'>some text inside a span</span>.
+        </p> 
+
+        <!-- Examples of images 
+                Try uncommenting the the different images and playing around with how to size them. If you want them to not be on the same line, add a <br/> tag (line break element).
+        -->
+        <img src="sparky.jpg" alt="Sparky">
+        <!-- <img src="sparky.jpg" alt="Sparky" width="300"> -->
+        <!-- <img src="sparky.jpg" alt="Sparky" width="300" height="500"> -->
+        <!-- <img src="sparky.jpg" alt="Sparky" width="50%"> -->
+        <!-- <img src="sparky.jpg" alt="Sparky" style="max-width:300px" width="50%"> -->
+
+        <!-- Here is an example of a table. Try commenting out the CSS above and see what happens. -->
+        <h1>SCAI Faculty</h1>
+        <table>
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Received PhD from</th>
+            </tr>
+            <tr>
+                <td>Chris</td>
+                <td>Bryan</td>
+                <td>UC Davis</td>
+            </tr>
+            <tr>
+                <td>Ross</td>
+                <td>Maciejewski</td>
+                <td>Purdue</td>
+            </tr>
+            <tr>
+                <td>Huan</td>
+                <td>Liu</td>
+                <td>USC</td>
+            </tr>
+            <tr>
+                <td>Adam</td>
+                <td>Doupe</td>
+                <td>UC Santa Barbara</td>
+            </tr>
+        </table>
+
+        <!-- Horizontal rows - This tag adds a horizontal row to your page.
+        -->
+        <hr/>
+        <!-- You can also use CSS styling to update hr tags. -->
+        <hr style="border:1px dashed red"/> 
+        <hr style="width:50%; margin:auto"/>
+
+
+        <!-- 
+            The Document Object Model
+        
+            A Web page is a document. This document can be either displayed in the browser window or as the HTML source. But it is the same data in both cases. The Document Object Model (DOM) represents the web page as a tree data structure, and allows the HTML to be manipulated via CSS and Javascript.
+            Here's a couple of resources for learning more about the DOM:
+                https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model/Introduction
+                https://www.youtube.com/watch?v=tSv2KIF7uE4 
+            You should get used to using DevTools, especially the page inspector and web console. The Javascript debugger is also a nice tool, though we won't specifically cover it in CSE 494.
+                Chrome: https://developers.google.com/web/tools/chrome-devtools
+                Firefox: https://developer.mozilla.org/en-US/docs/Tools
+            DevTools will make debugging your homework and project code much easier and faster by allowing you to see and trace what happens in the DOM.
+        -->
+
+        <!--
+            We'll get into Javascript soon, but here are some examples of embedding it directly into a webpage using a <script> element.
+            If you place the <script> tag in the <head> element, it will run as soon as the page is loaded. If you are referencing elemnts in your page (that haven't yet been parsed/rendered, this is a bad idea. However, you can also have Jacascript run in response to events: https://www.w3schools.com/js/js_events.asp                
+                
+            Below, it's an "onclick" event. Other events include onmouseover, onload, and onkeydown. Try changing the onclick to one of those.
+        -->
+        <br/>
+        <br/>
+        <button onclick="hello();">Hello!</button>
+        <script>
+            function hello() {
+                alert('Well, hello there!!');
+            }
+        </script>
+        <!--
+            Javascript can also be factored out of the HTML entirely. Here's an example of that approach.
+        -->
+        <button id="goodbyeButton">Goodbye!</button>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelector('#goodbyeButton').onclick = goodbye;
+            });
+            function goodbye() {
+                alert('Goodbye, old friend...');
+            }
+        </script>
+    </body>
+</html>
