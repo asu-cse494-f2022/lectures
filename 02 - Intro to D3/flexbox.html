@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<!-- 
+    Flexbox layouts in CSS allow for the reorganization of content based on the size of the viewport. This is an example of "responsive design," the idea that a website should look good regardless of the platform or display it's viewed on.
+ -->
+<html>
+    <head>
+        <title>Flexbox example</title>
+        <style>
+            .container {
+                display: flex;
+                flex-wrap: wrap;
+            }
+            /* "a > b" means that "b" is the immediate child of "a" */
+            .container > div {
+                background-color: springgreen;
+                font-size: 20px;
+                margin: 20px;
+                padding: 20px;
+                width: 200px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div>A. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id fermentum elit. Aenean ornare porta sagittis.</div>
+            <div>B. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id fermentum elit. Aenean ornare porta sagittis.</div>
+            <div>C. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id fermentum elit. Aenean ornare porta sagittis.</div>
+            <div>D. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id fermentum elit. Aenean ornare porta sagittis.</div>
+            <div>E. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id fermentum elit. Aenean ornare porta sagittis.</div>
+            <div>F. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id fermentum elit. Aenean ornare porta sagittis.</div>
+            <div>G. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id fermentum elit. Aenean ornare porta sagittis.</div>
+            <div>H. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id fermentum elit. Aenean ornare porta sagittis.</div>
+            <div>I. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id fermentum elit. Aenean ornare porta sagittis.</div>
+            <div>J. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id fermentum elit. Aenean ornare porta sagittis.</div>
+            <div>K. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id fermentum elit. Aenean ornare porta sagittis.</div>
+            <div>L. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus id fermentum elit. Aenean ornare porta sagittis.</div>
+        </div>
+    </body>
+</html>

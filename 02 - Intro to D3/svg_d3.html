@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<!--
+    This example recreates svg.html using D3.
+-->
+<html>
+    <head>
+        <title>SVG with D3 example</title>
+        <!-- You can get access to D3 by referencing the library online,
+              or by downloading the the JS file and locally referencing it. -->
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            svg {
+                border:1px solid black;
+                border-radius: 10px;                
+                width:500px;   
+                height:300px;   
+                display:block;
+                margin:auto;
+            } 
+            /* svg > circle {
+                fill: lightblue;
+                stroke:gray;
+                stroke-width:3px;
+            }            */
+        </style>
+    </head>
+    <body>
+        <svg id="drawingpad"></svg>
+    </body>
+    <script>
+        // Get a reference to the SVG 
+        const svg = d3.select('#drawingpad');
+        
+        // Add circle 
+        svg.append('circle')
+             .attr('cx', 50)
+             .attr('cy', 50)
+             .attr('r', 30)
+             .style('fill', 'lightblue')
+             .style('stroke','gray')
+             .style('stroke-width','3px');
+        
+        // Add rectangle 
+        svg.append('rect')
+            .attr('x','200')
+            .attr('y', '20')
+            .attr('width','50')
+            .attr('height','20')
+            .style('fill','blanchedalmond')
+            .style('stroke','black');
+        
+        // Add line 
+        svg.append('line')
+            .attr('x1','300')
+            .attr('x2','400')
+            .attr('y1','30')
+            .attr('y2','45')
+            .style('stroke','black');
+
+        // Add polyline (note multi-line string using `) 
+        svg.append('polyline')
+            .attr('points',`50,150      
+                            100,150 
+                            125,130 
+                            100,100 
+                            150,100`)
+            .style('fill','none')
+            .style('stroke','black');
+
+        // Add ellipse 
+        svg.append('ellipse')
+            .attr('cx','280')
+            .attr('cy','140')
+            .attr('rx',50)
+            .attr('ry',25)
+            .style('fill','lemonchiffon')
+            .style('stroke','black');
+
+        // Add text 
+        svg.append('text')
+            .attr('x','50')
+            .attr('y','200')
+            .text('CSE 578? CSE 494!');
+    </script>
+</html>

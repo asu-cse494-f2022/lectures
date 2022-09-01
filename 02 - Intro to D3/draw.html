@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Draw pad example</title>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
+        <style>
+            #controlPanel {
+                width:500px;   
+                display:block;
+                margin:auto;
+                margin-top:20px;
+                margin-bottom:10px;
+                /* border:1px solid gray; */
+            }
+
+            svg {
+                border:1px solid black;
+                border-radius: 10px;                
+                width:500px;   
+                height:300px;   
+                display:block;
+                margin:auto;
+                
+                /* A nice smooth shadow effect */
+                box-shadow: 0 1px 1px rgba(0,0,0,0.12), 
+                            0 2px 2px rgba(0,0,0,0.12), 
+                            0 4px 4px rgba(0,0,0,0.12), 
+                            0 8px 8px rgba(0,0,0,0.12),
+                            0 16px 16px rgba(0,0,0,0.12);
+            }
+
+        </style>
+    </head>
+    <body>
+        <div id='controlPanel'>
+            <h1>Drawing pad example</h1>
+            <select id='color-picker'>
+                <option value='black'>black</option>
+                <option value='rosybrown'>rosy brown</option>
+                <option value='royalblue'>royal blue</option>
+            </select>
+            &nbsp;
+            <input id='thickness-range' type='range' min='1' max='6' value='1' style='width:70px;'>
+            <span id='thickness-span'>1</span>
+            &nbsp;
+            <button id='erase-button'>Erase</button>
+        </div>
+        <svg id="draw-pad"></svg>
+    </body>
+    <script>
+
+        // Get a reference to the SVG
+        const svg = d3.select('#draw-pad');
+
+        // Example 1: Simple drawing
+        // Whenever the mouse moves on the SVG, drawPoint
+        // will be called to draw a small circle.
+        // See also this: https://observablehq.com/@d3/multitouch
+
+        // function drawPoint() {
+        //     const coords = d3.pointer(event); 
+        //     console.log(coords); // if you want to log the mouse movements in the JS Console... 
+        //     svg.append('circle')
+        //         .attr('cx', coords[0])
+        //         .attr('cy', coords[1])
+        //         .attr('r', 5)
+        //         .style('fill', 'black');
+        // };
+        // svg.on('mousemove', drawPoint);
+
+
+
+        // Example 2: Drawing only on a mouse press
+        // This example only draws when the mouse is pressed, by
+        // using a boolean variable to control whether or not a point
+        // should be drawn. Note that if you move your mouse too fast,
+        // the circles become unconnected.
+
+        // let drawing = false;
+        // function drawPoint() {
+        //     if (!drawing)
+        //         return;
+
+        //     const coords = d3.pointer(event); 
+        //     svg.append('circle')
+        //         .attr('cx', coords[0])
+        //         .attr('cy', coords[1])
+        //         .attr('r', 5)
+        //         .style('fill', 'black');
+        // };
+        // svg.on('mousedown', () => {
+        //     drawing = true;
+        //     drawPoint();
+        // });
+        // svg.on('mouseup', () => {
+        //     drawing = false;
+        // });
+        // svg.on('mousemove', drawPoint);
+        
+
+
+        //  Example 3: Add some editing
+        // Here we add some functionality to take advantage of the 
+        // control widgets above the svg.
+        // All points and lines are saved in arrays, which allows them
+        // to be cleared when the "Erase" button is pressed.
+
+        let drawing = false;    // state
+        let points = [];
+        let lines = [];
+        
+        svg.on('mousedown', function() {
+            drawing = true;
+            const coords = d3.pointer(event); 
+            drawPoint(coords[0], coords[1], false);
+        });
+
+        svg.on('mouseup', () =>{
+            drawing = false;
+        });
+
+        svg.on('mousemove', function() {
+            if (!drawing)
+                return;
+            const coords = d3.pointer(event); 
+            drawPoint(coords[0], coords[1], true);
+        });
+
+        function drawPoint(x,y,connect) {
+            const color = document.querySelector('#color-picker').value;
+            const thickness = document.querySelector('#thickness-range').value;
+
+            if (connect) {
+              const last_point = points[points.length - 1];
+              const line = svg.append('line')
+                              .attr('x1', last_point.attr('cx'))
+                              .attr('y1', last_point.attr('cy'))
+                              .attr('x2', x)
+                              .attr('y2', y)
+                              .attr('stroke-width', thickness * 2)
+                              .style('stroke', color);
+              lines.push(line);
+            }
+            const point = svg.append('circle')
+                              .attr('cx', x)
+                              .attr('cy', y)
+                              .attr('r', thickness)
+                              .style('fill', color);
+          points.push(point);
+        }
+
+        // Update the thickness span when the range slider changes
+        const rangeSlider = document.querySelector('#thickness-range');
+        const rangeText = document.querySelector('#thickness-span');
+        rangeSlider.addEventListener('change', function() {
+            rangeText.innerHTML = rangeSlider.value;
+        });
+
+        // Erase points when clicked
+        document.querySelector("#erase-button").onclick = function() {
+            for (let i = 0; i < points.length; i++)
+                points[i].remove();
+            for (let i = 0; i < lines.length; i++)
+                lines[i].remove();
+            points = [];
+            lines = [];
+        }
+
+    </script>
+</html>

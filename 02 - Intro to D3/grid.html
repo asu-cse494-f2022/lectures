@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<!--
+    Grid lets you organize elements like divs (which by default stack vertically) into a grid layout.
+ -->
+<html>
+    <head>
+        <title>Grid example</title>
+        <style>
+            .grid {
+                background-color: lightgray;
+                display: grid;
+                padding: 20px;
+                grid-column-gap: 20px;
+                grid-row-gap: 10px;
+                grid-template-columns: 25% 25% auto;
+            }
+            .grid-item {
+                border:1px solid gray;
+                background-color: white;
+                font-size: 20px;
+                padding: auto;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="grid">
+            <div class="grid-item">1</div>
+            <div class="grid-item">2</div>
+            <div class="grid-item">3</div>
+            <div class="grid-item">4</div>
+            <div class="grid-item">5</div>
+            <div class="grid-item">6</div>
+            <div class="grid-item">7</div>
+            <div class="grid-item">8</div>
+            <div class="grid-item">9</div>
+            <div class="grid-item">10</div>
+            <div class="grid-item">11</div>
+            <div class="grid-item">12</div>
+        </div>
+    </body>
+</html>
