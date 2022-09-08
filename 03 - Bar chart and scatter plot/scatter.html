@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Scatterplot example</title>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            svg {
+                width: 600px;
+                height: 400px;
+                border:1px solid gray;  
+            }
+            /* Using body makes both the text for the spans 
+               and in the SVG to use sans-serif font */
+            body {
+                font-family:sans-serif;
+            }
+            select {
+                margin-right:20px;
+                margin-bottom:10px;
+            }
+            .colorLegend text {
+                font-size:.9em;
+            }
+            .colorLegend line{
+                stroke:white;
+            }
+            .colorLegend .domain {
+                stroke:none;    
+            }
+        </style>
+    </head>
+    <body>
+        <!-- 
+            1. Add three dropdowns to control which variables are shown in the scatterplot.
+               Note that each dropdown calls the 'drawScatterPlot()' function when an 
+               onchange event happens.
+        -->
+        X position:&nbsp;   <!-- '&nspb;' adds a space in an HTML line. -->
+        <select id="column-1-select" onchange='drawScatterPlot();'>
+            <option value='Attack'>Attack</value>
+            <option value='Defense'>Defense</value>
+            <option value='HP'>HP</value>
+            <option value='Speed'>Speed</value>
+            <option value='Total'>Total</value>
+        </select>
+        Y position:&nbsp;
+        <select id="column-2-select" onchange='drawScatterPlot();'>
+            <option value='Attack'>Attack</value>
+            <option value='Defense' selected>Defense</value>
+            <option value='HP'>HP</value>
+            <option value='Speed'>Speed</value>
+            <option value='Total'>Total</value>
+        </select>
+        Color:&nbsp;
+        <select id="color-select" onchange='drawScatterPlot();'>
+            <option value='Attack'>Attack</value>
+            <option value='Defense'>Defense</value>
+            <option value='HP'>HP</value>
+            <option value='Speed'>Speed</value>
+            <option value='Total'>Total</value>
+        </select>
+        <br>  <!-- What happens if you take out this line break? -->
+        <svg></svg>
+    </body>
+    <script>
+        // /*
+        //     2. Get a reference to the SVG and set some layout variables, and create
+        //        our pokemonData variable (which will set one time in the d3.csv call).
+        // */
+        const svg = d3.select('svg');
+        const width = +svg.style('width').replace('px','');
+        const height = +svg.style('height').replace('px','');
+        const margin = { top:50, bottom: 50, right: 50, left: 60 };
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+        let pokemonData;
+
+        /*
+            4. Draw the scatterPlot.
+                This is called when:
+                > The page is first loaded (and d3.csv is run).
+                > When a select dropdown is updated and the onchange event is called.
+        */
+        function drawScatterPlot() {
+
+            /*
+                5. Get the current values in the drop downs. There's multiple ways to 
+                   do this, both using D3 and base Javascript. xAttrib and cAttrib use 
+                   the D3 version, and yAttrib uses base Javascript.
+            */
+            const xAttrib = d3.select('#column-1-select').property('value');
+            const yAttrib =  document.getElementById('column-2-select').value;
+            const cAttrib = d3.select('#color-select').property('value');
+            console.log(`x = ${xAttrib}, y = ${yAttrib}, color = ${cAttrib}`);
+
+            /*
+                6. Create our x and y scales.
+                    x and y are both linear scales. Want to try different ones, like POW or Log?
+                    Check out the documentation: https://github.com/d3/d3-scale#continuous-scales
+                    Note that the yScale reverses the range order to draw from "bottom" to "top".
+            */
+            const xScale = d3.scaleLinear()
+                            .domain([0, d3.max(pokemonData, d => d[xAttrib])]) // data space
+                            .range([0, innerWidth]); // pixel space
+            const yScale = d3.scaleLinear()
+                            .domain([0, d3.max(pokemonData, d => d[yAttrib])]) // data space
+                            .range([innerHeight, 0 ]); // pixel space
+
+            /*
+                7. Create the color scale based on the cAttrib value.
+                   D3 lets you create manual color scales, which I show using colorScaleManual,
+                   and it provides several pre-built schemes, which can be referenced here:
+                   https://github.com/d3/d3-scale-chromatic
+                   
+                   I show an example of both color scales below. For the pre-built scheme,
+                   try replacing the d3.interpolateRdYlGn scheme with another option
+                   that you found in the documentation.
+            */
+            // Extent gets the "min" and "max" values and returns as an array of size 2.
+            const colorExtent = d3.extent(pokemonData, d => d[cAttrib]);
+            // This is how you do a manual color scale
+            const colorScaleManual = d3.scaleLinear()
+                                        .domain(colorExtent)
+                                        .range(['lightblue','magenta']);
+            // This is how you do a pre-built scale, by using d3.scaleSequential.
+            const colorScaleProvided = d3.scaleSequential(d3.interpolateRdYlGn)
+                                        .domain(colorExtent);
+
+            /*
+                7. Clear anything currently drawn on our svg. 
+                   Try commenting this out and seeing what happens 
+                   when you update the scatter plot.
+            */
+            svg.select('g').remove();
+            
+            /*
+                8. Draw the scatter plot circles.
+                    You can swap the color scales being used by commenting/uncommenting 
+                    the .style('fill',...) lines.
+            */
+            const g = svg.append('g')
+                        .attr('transform', 'translate('+margin.left+', '+margin.top+')');;
+            g.selectAll('circle')
+             .data(pokemonData)
+             .enter()
+             .append('circle')
+             .attr('id', d => d.Name.replaceAll(' ','_'))
+             .attr('cx', d => xScale(d[xAttrib]))
+             .attr('cy', d => yScale(d[yAttrib]))
+             .attr('r',3)
+            //  .style('opacity',.6)    // you can uncomment this line to make the points semi-opaque, but it can lead to separability issues with the color scale
+             .style('fill', d => colorScaleManual(d[cAttrib]))
+            //  .style('fill', d => colorScaleProvided(d[cAttrib]))
+             .style('stroke','gray');
+            
+            /*
+                9. Add a gradient colorscale legend.
+                    This is not the most intuitive operation in D3, so I recommend 
+                    copy/pasting/modifying this code as necessary when you need to add 
+                    a sequential colorscale to your D3 visualization.
+
+                    Code modified from here: 
+                    https://observablehq.com/@tmcw/d3-scalesequential-continuous-color-legend-example
+
+                    Note that I am showing the colorScaleManual here. 
+                    If you want to use the other color scale, change the references below.
+            */
+            const legendX = 70,      // the top left point of the colorscale bar
+                  legendY = -40,
+                  legendHeight = 20,
+                  legendWidth = 200;
+            const linearGradient = svg.append("defs")
+                            .append("linearGradient")
+                            .attr("id", "linear-gradient");
+            linearGradient.selectAll("stop")
+                          .data(colorScaleManual.ticks()
+                          .map((t, i, n) => ({ offset: `${100*i/n.length}%`, color: colorScaleManual(t) })))
+                .enter().append("stop")
+                .attr("offset", d => d.offset)
+                .attr("stop-color", d => d.color);
+            g.append('g')
+                .append("rect")
+                .attr('transform', `translate(${legendX}, ${legendY})`)
+                .attr("width", legendWidth)
+                .attr("height", legendHeight)
+                .style("fill", "url(#linear-gradient)");
+            const colorAxis = d3.axisBottom(d3.scaleLinear()
+                                               .domain(colorScaleManual.domain())
+                                               .range([0,legendWidth]))
+                                               .ticks(5).tickSize(-20);
+            g.append('g').call(colorAxis)
+                         .attr('class','colorLegend')
+                         .attr('transform',`translate(${legendX},${(legendY+legendHeight)})`);
+            g.append('text')
+                .attr('class', 'colorLegend')
+                .attr('x', legendX-10)
+                .attr('y', legendY+legendHeight/2)
+                .style('text-anchor', 'end')
+                .style('alignment-baseline', 'central')
+                .text(cAttrib)
+            /*
+                10. Draw the scatterplot's x and y axes and add label axes
+            */
+            const yAxis = d3.axisLeft(yScale);
+            g.append('g').call(yAxis);
+            const xAxis = d3.axisBottom(xScale);
+            g.append('g').call(xAxis)
+                            .attr('transform',`translate(0,${innerHeight})`)
+            g.append('text')
+                .attr('x',innerWidth/2)
+                .attr('y',innerHeight+40)
+                .text(xAttrib);
+            g.append('text')
+                .attr('transform','rotate(-90)')
+                .attr('y','-40px')
+                .attr('x',-innerHeight/2)
+                .style('text-anchor','middle')
+                .text(yAttrib )
+        }
+
+        /*
+            3. Load our data, do some basic cleaning, 
+               set it to the pokemonData variable, and call drawScatterPlot();
+               
+               The Pokemon dataset is downloaded from here: 
+               https://www.kaggle.com/rounakbanik/pokemon
+        */
+        d3.csv('Pokemon.csv').then(data => {
+
+            // Convert these attributes from string to number type
+            data.map(function(d) {
+                d.Attack = +d.Attack;
+                d.Defense = +d.Defense;
+                d.HP = +d.HP;
+                d.Speed = +d.Speed;
+                d.Total = +d.Total;
+            });
+            console.log(data);  // You can check the data in your browser's dev tools
+
+            pokemonData = data; // Set the data to the global pokemonData variable
+            drawScatterPlot();  // call the function that draws the scatter plot
+        });
+
+
+    </script>
+</html>
