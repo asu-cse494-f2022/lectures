@@ -1,0 +1,290 @@
+<!-- 
+    Data from here: https://observablehq.com/@d3/streamgraph
+ -->
+
+ <!DOCTYPE html>
+ <html>
+    <head>
+        <title>Line chart examples</title>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
+        <style>
+            div {
+                margin:20px;
+            }
+            svg {
+                border:1px solid black;
+                border-radius:5px;
+                width:600px;
+                height:400px;
+                margin:auto;
+                display:block;
+            }
+            h1 {
+                text-align: center;
+                font-family:sans-serif;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Line chart examples</h1>
+        <div id='single-div'></div>
+        <div id='multi-div'></div>
+    </body>
+    <script>
+
+        // 1. We are creating two SVGs, one for a single line chart
+        //    and one for a multi-line chart. So add 2 svgs.
+        var svgSingle =  d3.select('#single-div')
+                            .append('svg'); 
+        var svgMulti =  d3.select('#multi-div')
+                            .append('svg'); 
+        
+        // 2. Since both SVGs are the same size, let's just share formatting variables
+        var margin = { top: 10, right: 30, bottom: 30, left: 60 };
+        const width = +svgSingle.style('width').replace('px','');
+        const height = +svgSingle.style('height').replace('px','');
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+        
+        // 3. Both line charts can also share the same x scale, 
+        //    but they do not share the same y scale. The y scale we create
+        //    in the functions to draw the charts.
+        var xScale = d3.scaleTime();
+
+        // 4. Both line charts will use the same dataset; store as a global var
+        var lineData;
+
+        // 5. Load the data
+        //    Do some data wrangling
+        //    Set the lineData attribute
+        //    Set the xScale domain/range
+        //    Call functions to draw the two charts
+        d3.csv('data.csv').then(data => {
+            
+            // Data wrangling:
+            // Convert each attribute to a number except for 
+            // the date field which is converted to JS Date objects
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
+            data.forEach(d => {
+                // console.log(d)
+                for(var key in d) {
+                    if(key == 'date') {
+                        d.date = d3.timeParse('%Y-%m-%d')(d.date);
+                    } else {
+                        d[key] = +d[key]
+                    }
+                }
+            });
+            console.log(data);
+
+            lineData = data;
+
+            xScale.domain(d3.extent(data, function(d) { return d.date; }))
+                  .range([ 0, innerWidth ]);
+
+            singleLineChart();
+            drawMultiLine();
+        });
+
+        // 6. Draw the single line chart
+        function singleLineChart() {
+
+            // The attribute that we'll plot. 
+            // Comment it out and try some other attributes.
+            const attribute = 'Finance'; 
+            // const attribute = 'Manufacturing'; 
+            // const attribute = 'Transportation and Utilities'; 
+            // const attribute = 'Information'; 
+           
+            // Add a g element with top/left margin offsets
+            // Remember, if you use JS string literals in the transform, 
+            // use a tick mark (`) and not a single quote (').
+            const g = svgSingle.append('g')
+                        .attr('transform',`translate(${margin.left},${margin.top})`);
+
+            // 7. Create the y scale for the line chart 
+            //    that ONLY uses the one attribute's data
+            const yScale = d3.scaleLinear()
+                            .domain([0, d3.max(lineData, d => d[attribute] )])
+                            .range([innerHeight,0]);
+
+            // Go ahead and add the y-axis and x-axis to the plot
+            g.append('g')
+                .call(d3.axisLeft(yScale));
+            g.append('g')
+                .attr('transform',`translate(0,${innerHeight})`)
+                .call(d3.axisBottom(xScale));
+                
+            // 8. Create a D3 line generator
+            //    .curve(..) applies a smoothing function to the line
+            //    though it's hard to see in this example. 
+            //    See this link for more examples:
+            //    https://bl.ocks.org/d3noob/843b6b434bc1006da0234a95d2e89479
+            const singleLine = d3.line()
+                                    .x(d => xScale(d.date))
+                                    .y(d => yScale(d[attribute]))  
+                                    .curve(d3.curveMonotoneX)
+
+            // 9. Append the line to chart.
+            //    Notice that we don't do a ".data(...).enter()" here.
+            //    Since there's just 1 element (1 line), we use "datum" to
+            //    bind lineData to a single line and then just append 
+            //    it to the display. More info:
+            //    https://www.intothevoid.io/data-visualization/understanding-d3-data-vs-datum/
+            g.append('path')
+                .datum(lineData)  
+                .attr('class','singleLine')      
+                .style('fill','none')
+                .style('stroke','steelblue')
+                .style('stroke-width','1')
+                .attr('d', singleLine);
+            
+            // 10. We can also add some circle marks like this.
+            //     For line charts with lots of timsteps, this
+            //     may not be the best idea. :-)
+            g.selectAll('circle')
+                    .data(lineData)
+                    .enter()
+                    .append('circle')
+                    .attr('class','singleCircles')      
+                    .style('fill','steelblue')
+                    .attr('cx', i => xScale(i.date))
+                    .attr('cy', d => yScale(d[attribute]))
+                    .attr('r', 2);
+            
+            // // Add axis labels
+            addAxesLabels(g);
+        }
+
+        /*
+            11. You can pass D3 variables in functions.
+                Here's an example to reuse the code for adding
+                axis labels.
+        */
+        function addAxesLabels(g) {
+            g.append('text')
+                .attr('transform','rotate(-90)')
+                .attr('dy','20')
+                .style('text-anchor','end')
+                .text('Count');
+            g.append('text')
+                .attr('transform',`translate(${innerWidth},${innerHeight-10})`)
+                .style('text-anchor','end')
+                .text('Year');
+        }
+
+        // 12. Draw the multiple line chart
+        function drawMultiLine() {
+
+            // add the g element
+            const g = svgMulti.append('g')
+                        .attr('transform',`translate(${margin.left},${margin.top})`);
+
+            // 13. While the data CSV that we imported is easy to read in something like Excel, it
+            //     requires a bit of finesse in D3. This code will convert it into a form that works.
+            //     Here's what's happening:
+            //      lineData.columns returns the csv headers
+            //      .slice(1) returns the headers starting from index=1 (ie, omitting the date column)
+            //      .map() takes each column and creates an array, where each item in the array has
+            //          the columnname (id) as a property
+            //          and an array called items
+            //              date in the items array correspond to the dates in each row
+            //              val corresponds to the value of the current column
+            //     At the end of this, we get 1 array with 14 items 
+            //     (because there are date+14 attribute columsn in the dataset)
+            //
+            //     Each of the 14 items is a JS object like this: 
+            //       {id: the_columnName, items: an_array_with_2_columns_(date_and_val) }
+            console.log(lineData)
+            const slices = lineData.columns.slice(1).map(function(id) {
+                return {
+                        id: id,
+                        items: lineData.map(function(d) {
+                            return {
+                                date: d.date,
+                                val: d[id]
+                            }
+                        })
+                       };
+            });
+            console.log(slices);
+            // // For an alternative example of CSV formatting, 
+            // // see this example: https://bl.ocks.org/d3noob/7bf95c7ac092db2fe31a979b926b91b8
+            
+            // 14. In contrast to the single line chart, 
+            //     when setting the yScale's max valule, 
+            //     we have to compare the max of each slice
+            const yScale = d3.scaleLinear()
+                            .range([innerHeight,0])
+                            .domain([0, d3.max(slices, slice => {
+                                return d3.max(slice.items, item => item.val)
+                            })]);
+            
+            // 15. Use a categorical color scale
+            //     schemeAccent has 8 colors, but we have 14 attributes.
+            //     D3 will repeat colors in this case.
+            // 
+            //     Note that we don't have a domain or range here. 
+            //     The way we reference the colorscale when drawing the lines
+            //     will iterate through its color options
+            //     https://github.com/d3/d3-scale-chromatic
+            const colorScale = d3.scaleOrdinal(d3.schemeAccent);
+
+            // 16. In D3, lines are basically d3.paths() connecting a bunch 
+            //     of (x,y) coordinates in a 2D plane.
+            // 
+            //     We can use a line function similar to the single line chart
+            //     (Note that the .y(...) calls are different though!)
+            const singleLine = d3.line()
+                                .x(d => xScale(d.date))
+                                .y(d => yScale(d.val))  
+                                .curve(d3.curveMonotoneX);
+            
+            // 17. This selector returns an empty selection of 'lines' in svgMulti
+            //      .data(slices).enter() says to add 14 objects
+            //      .append('path') says to add each object as a line
+            const lines = g.selectAll('lines')
+                                    .data(slices)
+                                    .enter()
+                                    .append('path')
+                                    .style('fill','none')
+                                    .style('stroke',d => colorScale(d.id))
+                                    .style('stroke-width','1')
+                                    .attr('d', function(d) { return singleLine(d.items); });
+           
+            // 18. An inelegant but straightforward solution to adding circles on the lines
+            slices.forEach(function(slice) {
+                g.selectAll(slice.id)
+                    .data(slice.items)
+                    .enter()
+                    .append('circle')
+                        .attr('cx', d => xScale(d.date))
+                        .attr('cy', d => yScale(d.val))
+                        .style('fill', colorScale(slice.id))
+                        .style('opacity','.5')
+                        .attr('r',2);
+            });
+            
+            // 19. Add axes and labels
+            g.append('g')
+                .call(d3.axisLeft(yScale));
+            g.append('g')
+                .attr('transform',`translate(0,${innerHeight})`)
+                .call(d3.axisBottom(xScale));
+
+            // Add axis labels
+            addAxesLabels(g);
+
+
+            // 20. If we want to color the top line using 
+            // the color scale, we can do it by selecting the line and circles
+            svgSingle.select('.singleLine')
+                        .style('stroke',colorScale('Finance'));
+            svgSingle.selectAll('.singleCircles')
+                        .style('fill',colorScale('Finance'));
+        }
+        
+    </script>
+</html>
+    

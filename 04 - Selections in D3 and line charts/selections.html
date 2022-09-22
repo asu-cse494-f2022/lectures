@@ -1,0 +1,214 @@
+<!--
+    D3 selections let you perform powerful data-driven manipulation of the DOM. With selections you can: set attributes, styles, properties, HTML, text, and more. This includes both "normal" HTML elements like divs and spans as well as SVG elements (circles, rects, etc.), which are are really just HTML elements anyways. The documentation link does a really nice job of explaining specifics, while the second link provides a nice summary.
+
+    https://github.com/d3/d3-selection
+    https://www.digitalocean.com/community/tutorials/js-d3-selections
+-->
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Selections example</title>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
+        <style>
+            .col-4 {
+                padding: 20px;
+                background-color: oldlace;
+                border: 2px solid black;
+            }  
+            .col-3 {
+                padding: 20px;
+                background-color: salmon;
+                border: 2px solid black;
+            }
+            .highlighted {
+                background-color: lemonchiffon;
+            }
+            input {
+                margin:10px;
+            }
+            svg {
+                width: 60px;
+                height:50px;
+                background-color:white;
+                border:1px solid black;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- We are using bootstrap layouts to organize this page -->
+        <div class="container">
+            <h1>D3 selections</h1>
+            <div class='row'>
+                <div class="col-4">
+                    My courses this spring:
+                    <ul id='current-list'>
+                        <li>CSE 494: Data visualization</li>
+                        <li>CSE 578: Data visualization</li>
+                        <li>ASU 101 (Monday)</li>
+                        <li>ASU 101 (Tuesday)</li>
+                        <li>ASU 101 (Wednesday)</li>
+                    </ul>
+                </div>
+                <div class='col-4'>
+                    My courses next semester
+                    <ul id='clicked-list'>
+                        <li>CSE 494: Data Visualization</li>
+                    </ul>
+                </div>
+                <div class="col-4">
+                    Add a new course: <br/>
+                    Way 1: <input type='text' id='course-input-1' onchange='addClass(this.value);'> <br/>
+                    Way 2: <input type='text' id='course-input-2' onchange='addClass();'> <br />
+                    Way 3: <input type='text' id='course-input-3'> <br />
+                    Way 4: <input type='text' id='course-input-4'> 
+                    <input type='button'  value='Add' id='add-button'>                    
+                </div>
+            </div>
+            <input type='button' id='select-first-li-button' value='First list item'>
+            <br>
+            <input type='button' id='select-all-li-button' value='All list item'>
+            <br>
+            <input type='button' id='select-chain-li-button' value='Chained list item'>
+            <div class='row'>
+                <div class='col-3' id='div-one'>
+                    one
+                </div>
+                <div class='col-3' id='div-two'>
+                    two
+                </div>
+                <div class='col-3' id='div-three'>
+                    three
+                </div>
+                <div class='col-3' id='div-four'>
+                    four
+                </div>
+            </div>
+            <input type='button' id='add-highlights' value='Add Highlight'>
+            <br />
+            <input type='button' id='remove-highlights' value='Remove Highlight'>
+            <br />
+            <input type='button' id='add-one-svg' value='Add one SVG' onclick='addOneSvg();'>
+            <br />
+            <input type='button' id='add-all-svg' value='All all SVG' onclick='addAllSvg();'>
+            <br />
+            <input type='button' id='add-three-svg' value='All SVG to three' onclick='addSvgToThree();'>
+        </div>
+        
+    </body>
+    <script>
+
+        // 
+        // Examples of ways to select HTML elements and their values
+        // 
+
+        // Way 1: Call function with the course-input-1's entered text (value) as an arg
+        // // Way 2: Call function and then retrieve #course-input-2's text
+        function addClass(value) {
+            if(value) {
+                console.log('addClass: Way 1');
+            } else {
+                console.log('addClass:Way 2');
+                value = document.getElementById('course-input-2').value;
+            }
+
+            // append using base JavaScript
+            let item = document.createElement('li')
+            item.appendChild(document.createTextNode(value));
+            document.getElementById('clicked-list').appendChild(item);
+        }
+
+        // // Way 3: Add an event listener to #course-input-3
+        document.getElementById('course-input-3').addEventListener('change', function(event) {
+            console.log('addClass:Way 3');
+            addClass(this.value);
+        });
+
+        // Way 4: Use a second element (button) to add value from #course-input-4
+        // document.querySelector returns the 1st element in the DOM matching the selector argument
+        // https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector
+        document.querySelector('#add-button').addEventListener('click', function(event) {
+            console.log('addClass:Way 4');
+            let value = document.getElementById('course-input-4').value;
+            // let value = d3.select('#course-input-4').node().value;
+            console.log(value);
+            addClass(value);
+        });
+
+
+
+        // // D3 selection examples
+
+        /*
+            d3.select will select the first element that matches the specified selector string.
+            If multiple elements match the selector, only the first matching element 
+            (in document order) will be selected.
+        */
+        document.querySelector('#select-first-li-button')
+                .addEventListener('click', function(event) {
+            d3.select('li').style('font-weight','bold');
+        });
+
+        /*
+            (All list item button)
+            Select all elements that match the specified selector string.
+        */
+        document.querySelector('#select-all-li-button')
+                .addEventListener('click', function(event) {
+            d3.selectAll('li').style('color','red')
+        });
+
+        /*
+            (Chained list item button)(chained selection)
+        */
+        document.querySelector('#select-chain-li-button')
+                .addEventListener('click', function(event) {
+            d3.selectAll('#clicked-list')
+              .selectAll('li')
+                  .style('color','green');
+        });
+
+        /*
+            Setting classes using D3 select and classed (set to either true or false)
+        */
+        document.querySelector('#add-highlights').addEventListener('click', function(event) {
+            // d3.select('.col-3').classed('highlighted', true); // select first
+            d3.selectAll('.col-3').classed('highlighted', true); // select all
+        });
+        document.querySelector('#remove-highlights').addEventListener('click', function(event) {
+            d3.selectAll('.col-3').classed('highlighted',false);
+                    // .attr('class','highlighted');
+
+        });
+
+        /*
+            Using D3 for mouse interactions on HTML elements. 
+            Use 'this' to select your element.
+            Some more explanation: http://jonathansoma.com/tutorials/d3/clicking-and-hovering/
+        */
+        d3.selectAll('.col-3')
+            .on('mouseover',function(d,i) {
+                d3.select(this).classed('highlighted',true)
+            })
+            .on('mouseout', function(d,i) {
+                d3.select(this).classed('highlighted',false);
+            })
+            .on('click', function(d,i) {
+                d3.select(this).append('svg');
+            });
+
+        /*
+            Dynamically adding SVGs
+        */
+        function addOneSvg() {
+            d3.select('.col-3').append('svg');
+        }
+        function addAllSvg() {
+            d3.selectAll('.col-3').append('svg');
+        }
+        function addSvgToThree() {
+            d3.select('#div-three').append('svg');
+        }
+
+    </script>
+</html>
