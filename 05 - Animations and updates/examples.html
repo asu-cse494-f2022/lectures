@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+ <html>
+    <head>
+        <title>Joins with D3</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" />
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            svg {
+                border:1px solid gray;
+                width:100%;
+                height:100px;
+            }
+            input {
+                width:100%;
+                margin-bottom:5px;
+            }
+            .row {
+                margin-top:30px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class='container'>
+
+            <!--
+
+                Animating objects in D3
+
+            -->
+
+            <div class='row'>
+                <div class='col-12'>
+                    <h1>Animation examples</h1>
+                </div>
+            </div>
+
+            <div class='row'>
+                <div class='col-md-4 col-sm-12'>
+                    <input type='button' value='Animate position' onclick='animatePosition();'>
+                    <input type='button' value='Slow animate' onclick='slowAnimate();'>
+                    <input type='button' value='Delayed animation' onclick='delayedAnimation();'>
+                    <input type='button' value='Staggered animation' onclick='staggeredAnimation()'>
+                    <input type='button' value='Eased animation' onclick='easedAnimation();'>
+                    <input type='button' value='Chained animations' onclick='chainedAnimations();'>
+                </div>
+                <div class='col-md-8 col-sm-12'>
+                    <svg id='svg1'></svg>
+                </div>
+            </div>
+
+            <script>
+                const animateData = ['a', 'b', 'c'];
+                const svg1 = d3.select('#svg1');
+                const width = svg1.node().clientWidth;
+                const startX = 50,
+                    endX = width-50;
+
+                svg1.selectAll('circle')
+                    .data(animateData)
+                    .enter()
+                    .append('circle')
+                    .attr('cx', startX)
+                    .attr('cy', (d,i) => 20 + i*30)
+                    .attr('r',10)
+                    .style('fill', 'peachpuff')
+                    .style('stroke','black');                
+
+                function animatePosition() {
+                    svg1.selectAll('circle')
+                        .transition()
+                        .attr('cx', function(d,i) {
+                            let currentX = d3.select(this).attr('cx');
+                            if(currentX == endX)
+                                return startX;
+                            return endX;
+                        });
+                }
+
+                function slowAnimate() {
+                    svg1.selectAll('circle')
+                        .transition()
+                        .duration(1000)
+                        .attr('cx', function(d,i) {
+                            return d3.select(this).attr('cx') == endX ? startX : endX;
+                        });
+                }
+
+                function delayedAnimation() {
+                    svg1.selectAll('circle')
+                        .transition()
+                        .delay(500)
+                        .attr('cx', function(d,i) {
+                            return d3.select(this).attr('cx') == endX ? startX : endX;
+                        });
+                }
+
+                function staggeredAnimation() {
+                    svg1.selectAll('circle')
+                        .transition()
+                        .duration(500)          // slower duration to make it easier to see
+                        .delay(function(d,i) {
+                            return i*150;
+                        })
+                        .attr('cx', function(d,i) {
+                            return d3.select(this).attr('cx') == endX ? startX : endX;
+                        });
+                }
+
+                /* 
+                    See this block for the different transitions available.
+                    https://bl.ocks.org/d3noob/39e8263efd3db34c3bde486f9067a961 
+                */
+                function easedAnimation() {
+                    svg1.selectAll('circle')
+                        .transition()
+                        .ease(d3.easeBounce)
+                        .duration(3000)
+                        .attr('cx', function(d,i) {
+                            return d3.select(this).attr('cx') == endX ? startX : endX;
+                        });
+                }                  
+
+                /*
+                    D3 transition.end https://observablehq.com/@d3/transition-end
+                    
+                    This is an example of using Javascript "promises". Here's a 
+                    good discussion: 
+                    https://datawanderings.com/2018/08/15/d3-js-v5-promise-syntax-examples/
+                */
+                function chainedAnimations() {
+                    const circles = svg1.selectAll('circle');
+                    circles.transition()
+                        .duration(1000)
+                        .attr('cx', function(d,i) {
+                            return d3.select(this).attr('cx') == endX ? startX : endX;
+                        })
+                        .end()
+                        .then(() => {
+                            circles
+                                .transition()
+                                .duration(1000)
+                                .style('fill', function(d) {
+                                    let currentColor = d3.select(this).style('fill');
+                                    if(currentColor == 'peachpuff' || currentColor == 'rgb(255, 218, 185)') {
+                                        return 'cadetblue';
+                                    } else {
+                                        return 'peachpuff';
+                                    }
+                                });
+                        });
+                }  
+            </script>
+
+
+            <!--
+                This example shows two things:
+                (1) You can build glyphs in D3 by creating a "g" element for each item, and then appending encodings (text, circles, etc.) on top of them.
+                (2) How you can loop animations together based on an html element and user interaction.
+            -->
+            <div class='row'>
+                <div class='col-md-4 col-sm-12'>
+                    <input type='button' value='Start' id='toggle-button' onclick='toggleAnimation();'>
+                </div>
+                <div class='col-md-8 col-sm-12'>
+                    <svg id='svg2'></svg>
+                </div>
+            </div>
+            
+            <script>
+                const svg2 = d3.select('#svg2');
+                 
+                // Add a g element for each item in the animateData array.
+                const glyphs = svg2.selectAll('g')
+                            .data(animateData)
+                            .enter()
+                            .append('g')
+                            .attr('transform', (d,i) => `translate(${startX},${20 + i*30})`);
+                
+                // For each g element, add a circle. 
+                // Note that it's placed at cx=0, cy=0.
+                glyphs.append('circle')
+                    .attr('cx', 0)
+                    .attr('cy', 0)
+                    .attr('r',10)
+                    .style('fill', 'peachpuff')
+                    .style('stroke','black');  
+                 
+                // Then append a text label above the circle. The text-anchor and alignment-baseline centers the text horizonatlly and vertically.
+                glyphs.append('text')
+                    .style('text-anchor','middle')
+                    .style('alignment-baseline','middle')
+                    .text(d => d);
+                
+                // This is called when the button is clicked. It update the button's text and calls circleTransitions()
+                function toggleAnimation() {
+                    const currentState = d3.select('#toggle-button').attr('value');
+                    const updatedLabel = currentState == 'Start' ? 'Stop' : 'Start';
+                    d3.select('#toggle-button').attr('value', updatedLabel);
+                    circleTransitions();
+                }
+
+                /*
+                    If the button's value is 'Stop' (meaning we are currently animating), then transition the glyphs. Once the transition completes, call this function again. It will keep being called until the  button's text equals 'Start'.
+                */
+                function circleTransitions() {
+                    if(d3.select('#toggle-button').attr('value') == 'Stop') {
+                        glyphs.transition()
+                        .duration(1000)
+                        .attr('transform', function(d,i) {
+                            const coords = getTranslateCoordinates(d3.select(this));
+                            const currentX = coords[0];
+                            let newX = currentX == endX ? startX : endX;
+                            return `translate(${newX},${20 + i*30})`;
+                        })
+                        .end()
+                        .then(circleTransitions);
+                    }
+                }
+
+                /*
+                    This function will extract the x and y translate from an element's transform attribute and return as an array. Note that if you have additional transforms (scale, rotate, etc.), you'll have to update this function's logic to correctly parse the string.
+                 */
+                function getTranslateCoordinates(element) {
+                    let t = element.attr('transform');
+                    t = t.replace('translate(','').replace(')','').replaceAll(' ','');
+                    let coords = t.split(',').map(d => +d);
+                    // console.log(coords);
+                    return coords;
+                }
+            </script>
+
+
+
+
+
+
+
+            <!--
+                
+                Data join examples
+
+            -->
+
+            <div class='row'>
+                <div class='col-12'>
+                    <h1>Join examples</h1>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-md-4 col-sm-12'>
+                    Adding elements to an SVG both with "append" and "join".
+                </div>
+                <div class='col-md-8 col-sm-12'>
+                    <svg id='svg3'></svg>
+                </div>
+            </div>
+            
+            <!--  
+                This example shows how join can be used to append elements
+                to the display instead of .enter().append()
+
+                Why use join? If we want to update and remove the data, then join simplifies the process of "updating elements" and "removing elements" greatly.
+            -->
+            <script>
+                const svg3 = d3.select('#svg3');
+
+                // This is how we've been adding elements to SVG so far.
+                svg3.selectAll('.appendCircles')
+                    .data(animateData)
+                    .enter()
+                    .append('circle')
+                        .attr('class','appendCircles')
+                        .attr('cx', (d,i) => 40 + i*40)
+                        .attr('cy', 50)
+                        .attr('r',10)
+                        .style('stroke','black')
+                        .style('fill','lemonchiffon');
+
+                // Instead of using enter, you can also add elements with join
+                svg3.selectAll('.joinCircles')
+                    .data(animateData)    
+                    .join('circle')
+                        .attr('class','appendCircles')
+                        .attr('cx', (d,i) => width - 40 - i*40)
+                        .attr('cy', 50)
+                        .attr('r',10)
+                        .style('stroke','black')
+                        .style('fill','lightpink');
+                        
+            </script>
+
+            <!--
+                Now let's see the real power of joins.
+
+                In this example, clicking the two input buttons updates the data structure used for displaying data in the SVG.
+
+                The Simple joins button calls the simpleJoin function, which uses .join('text') to add text elements the first time it is called. On subssequent clicks, the data array is updated (some new elements are added, and some existing elements are removed). The join automatically reconciles this: merging in new elements, and removing old ones, and then will add and remove elements on the display.
+            -->
+            <div class='row'>
+                <div class='col-md-4 col-sm-12'>
+                    <input type='button' value='Simple joins' onclick='simpleJoin();'>
+                    <input type='button' value='Animate joins' onclick='animatedJoin();'>
+                </div>
+                <div class='col-md-8 col-sm-12'>
+                    <svg id='svg4'></svg>
+                </div>
+            </div>
+
+            <script>
+                const states = [ 
+                         { name: 'Alberta', abbrev: 'AB' },
+                         { name: 'British Columbia', abbrev: 'BC' },
+                         { name: 'Manitoba', abbrev: 'MB' },
+                         { name: 'New Brunswick', abbrev: 'NB' },
+                         { name: 'Newfoundland and Labrador', abbrev: 'NL' },
+                         { name: 'Northwest Territories', abbrev: 'NT' },
+                         { name: 'Nova Scotia', abbrev: 'NS' },
+                         { name: 'Nunavut', abbrev: 'NU' },
+                         { name: 'Ontario', abbrev: 'ON' },
+                         { name: 'Prince Edward Island', abbrev: 'PE' },
+                         { name: 'Quebec', abbrev: 'QC' },
+                         { name: 'Saskatchewan', abbrev: 'SK' },
+                         { name: 'Yukon Territory', abbrev: 'YT'} ];
+
+                /*
+                    This function return a random subset of states.
+                        (1) shuffle the states array
+                        (2) select the first 0-13 items
+                        (3) sort these items based on their abbrev values
+                        (4) return the sorted subset
+                 */ 
+                function updateStates() {
+                    const newData = d3.shuffle(states)                              
+                                      .slice(0, Math.floor(2+Math.random() * 10))   
+                                      .sort( (a,b) => a.abbrev < b.abbrev ? -1 : 1);
+                    console.log(newData.length);
+                    return newData;
+                }
+
+                /*
+                    If the join selection is empty (first time you click update), add the elements.
+                    
+                    If the selection is NOT empty (subsequent clicks), then:
+                        > *append* new elements that have been added to data
+                        > *remove* elements no longer in data
+                        > *update* the x-position of elements that are still in data
+
+                    To tell our data points apart, we utilize a 2nd argument in the .data() call to specify a key. This 2nd argument takes an accessor function that is applied to each element of the data array. The  returned value is the "key" of that element (i.e., a string that  let's us know if the item should updated/deleted/added)
+                */
+                function simpleJoin() {
+                    const svg4 = d3.select('#svg4');
+                    const data = updateStates();
+        
+                    svg4.selectAll('text')
+                        .data(data, d => d.abbrev)
+                        .join('text')
+                            .attr('x', (d,i) => 20 + i * 40)
+                            .attr('y', 50)
+                            .text(d => d.abbrev);
+                }
+
+                /*
+                    In this example, the three aspects of the join (enter, update, exit) are invoked so that we can control how they are performed.
+
+                    Joins create three selections (eg, enter.append refers to data items that are being added to the display). This code says, for each of the enter, update, and exit selections, call a function that does something.
+                    
+                    The enter function appends new data items (ie, data items in the enter selection) at y=-20, and then immediately calls a transition to animate the text's position to y=50.
+
+                    Note: the .call function is used to avoid breaking the method chain, and should be used when adding transitions in joins:
+                        https://observablehq.com/@d3/selection-join
+                        https://github.com/d3/d3-selection/blob/master/README.md#selection_call
+                    
+                    The update function immediately changes the text color of elements in the update selection to black, and then applies a transition on elements in the update selection to change their x-position.
+
+                    The exit function immediately changes the text color of elements in the exit selection to red, and then applies a transition on these elements to change their y-position to y=120, and then it calls .remove() to delete these elements from the DOM (this runs at the end of the transition).
+                */
+                function animatedJoin() {
+                    const svg4 = d3.select('#svg4');
+                    const data = updateStates();
+
+                    svg4.selectAll('text')
+                        .data(data, d=> d.abbrev)
+                        .join(
+                            enter => enter.append('text')
+                                          .style('fill','green')
+                                          .attr('x', (d,i) => 20 + i * 40)
+                                          .attr('y', -20)
+                                          .text(d => d.abbrev)
+                                          .call(enter => enter.transition()
+                                                              .attr('y',50)),
+                            update => update
+                                            .style('fill', 'black')
+                                            .call(update => update.transition()
+                                                                  .attr('x', (d,i) => 20 + i * 40)),
+                            exit => exit
+                                        .style('fill','red')
+                                        .call(exit => exit.transition()
+                                                          .attr('y',120)
+                                                          .remove())
+                        );
+                }
+            </script>
+            
+
+            <!--
+                This example shows the animated join functionality using a glyph. Glyphs in D3 can be created using a group element ('g') as the "base", from which other elements like lines, circles, etc. can be attached. The thing to keep in mind is that, when moving the glyph, you should should attr('transform','translate()') calls. Elements appended to the g element only need to be positioned relative to the glyph (not the overall SVG).
+
+                Since there's multiple elements on each glyph, the enter, update, and exit functions in the join become a bit more complex.
+
+                The enter function creates the g elements and appends a circle and text element to each. The glyph's starting position is at y=-20, but a transition is immediately called to animate it to y=50.
+
+                In the update function, the circles being updated (ie, belonging to elements in the update selection) have their color immediately changed to lightgray, and then a transition is called to animate the entire glyph to its new x-position. Notice how you can reference both the entire glyph (by referencing the update selection directly) and the circles within the  selection (by calling update.selectAll('circle')).
+
+                The exit function again immediately changes the circle's color (to red this time), and then animates the glyph's position to y=120, and then (when the animation is  finished), calls .remove() to remove the g element (and all its children elements).
+            -->
+
+            <div class='row'>
+                <div class='col-md-4 col-sm-12'>
+                    <input type='button' value='Glyph joins' onclick='joinGlyphs();'>
+                </div>
+                <div class='col-md-8 col-sm-12'>
+                    <svg id='svg5'></svg>
+                </div>
+            </div>
+
+            <script>
+
+                function joinGlyphs() {
+                    const svg5 = d3.select('#svg5');
+                    const data = updateStates();
+
+                    svg5.selectAll('g')
+                        .data(data, d => d.abbrev)
+                        .join(
+                            enter => {
+                                const g = enter.append('g')
+                                             .attr('transform', (d,i) => `translate(${20 + i * 40},-20)`);
+                                g.append('circle')
+                                    .style('fill','lightgreen')
+                                    .style('stroke','black')
+                                    // cx and cy default to 0, so no need to include them
+                                    .attr('r',16);
+                                g.append('text')
+                                    .style('alignment-baseline','middle')
+                                    .style('text-anchor','middle')
+                                    .text(d => d.abbrev);
+                                g.call(enter => enter.transition()
+                                                     .duration(500)
+                                                     .attr('transform', (d,i) => `translate(${20 + i * 40},50)`));
+                            },
+                            update => {
+                                update.selectAll('circle')
+                                    .style('fill','lightgray')
+                                update.call(update => update.transition()
+                                                            .duration(500)
+                                                            .attr('transform', (d,i) => `translate(${20 + i * 40},50)`))
+                            },
+                            exit => {
+                                exit.selectAll('circle')
+                                    .style('fill','lightpink')
+                                
+                                exit.call(exit => exit.transition()
+                                                        .attr('transform', (d,i) => `translate(${20 + i * 40},120)`)
+                                                        .remove());
+                            }
+                        );
+                }
+
+            </script>
+
+
+            <!--
+                This last example shows how you can update and rearrange a bar chart using selection.joino and animated transitions with delays. This example is inspired by the bar chart race that's currently popular: https://app.flourish.studio/@flourish/bar-chart-race
+            -->
+            <div class='row'>
+                <div class='col-12'>
+                    <h1>Combining joins with animations</h1>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-md-4 col-sm-12'>
+                    Africa GDP
+                    <input type='number' id='year-input' value='2000' onchange='updateAfricaBars();'>
+                </div>
+                <div class='col-md-8 col-sm-12'>
+                    <svg id='svg6' style='height:200px;'></svg>
+                </div>
+            </div>
+
+            <script>
+                const svg6 = d3.select('#svg6');
+
+                // Store the loaded dataset to this var
+                var africaData;
+                
+                // This array will store the currently selected year's values when a new year is selected, the values are updated.
+                var yearData = [];
+
+                d3.csv('africa_gdp_per_capita.csv').then(function(data) {
+                    africaData = data;
+
+                    // initialize the yearData array with 0 values
+                    for(var key in africaData[0]) {
+                        if(key == 'Year')
+                            continue;
+                        yearData.push({ name: key, gdp: 0 });
+                    }
+
+                    // draw the bar chart the first time
+                    updateAfricaBars();
+                });
+
+                function updateAfricaBars() {
+                    // read the selected year value from the input
+                    const year = d3.select('#year-input').property('value');
+                    
+                    // Get the data item for the selected year:
+                    // The find() method returns the value of the first element in the provided array that satisfies the provided  testing function.
+                    const yearRow = africaData.find(row => year == +row.Year);
+                    
+                    // update the yearData array's values to the selected year
+                    yearData.forEach(function(d) {
+                        d.gdp = +yearRow[d.name];
+                    })
+
+                    // only get the 10 highest GDP countries
+                    //   > the sort function sorts the yearData array by decreasing gdp value 
+                    //   > the slice value returns the first 10 items in the array
+                    //   > save this array subset to a countries array
+                    let countries = yearData.sort((a,b) => b.gdp - a.gdp)
+                                            .slice(0,10);
+                    
+                    // update the xScale for the selected year's data
+                    const xScale = d3.scaleLinear()
+                                    .domain([0,d3.max(yearData, d => d.gdp)])
+                                    .range([0,width*.7]);
+
+                    svg6.selectAll('g')
+                        .data(countries, d => d.name)
+                        .join(
+                            enter => {
+                                // Create a glyph for each country, positioned at x=width*.3 and vertically stacked
+                                const g = enter.append('g')
+                                               .attr('transform',(d,i) => `translate(${width*.3},${10 + i * 20})`);
+                                // Append a text element to the glyph, slightly offset to the left with size=0
+                                g.append('text')
+                                    .attr('x',-10)
+                                    .style('text-anchor', 'end')
+                                    .style('alignment-baseline','middle')
+                                    .style('font-size','0em')
+                                    .text(d => d.name);
+                                // Append a rect to the glyph. Since width is not called, it defaults to 0.
+                                g.append('rect')
+                                    .attr('y',-10)
+                                    .attr('height', 20)
+                                    .style('fill','whitesmoke')
+                                    .style('stroke','black');
+                                // Call a transition immediately
+                                enter.call(enter => {
+                                    // After a 1.5 s delay, animate the text's size to normal (1em)
+                                    enter.selectAll('text')
+                                        .transition()
+                                        .delay(1500)
+                                        .duration(500)
+                                        .style('font-size','1em');
+                                    // After a 1.5 s delay, animate the rect's width to the gdp value
+                                    enter.selectAll('rect')
+                                        .transition()
+                                        .delay(1500)
+                                        .duration(500)
+                                        .attr('width', d => xScale(d.gdp));
+                                })
+                            },
+                            update => {
+                                update.call(update => {
+                                    // After a .5 s delay, animate the glyph vertically to its correct y position.
+                                    update.transition()
+                                          .delay(500)
+                                          .duration(1000)
+                                          .attr('transform',(d,i) => `translate(${width*.3},${10 + i * 20})`);
+                                    // After a 1.5 s delay, animate the rect's width to the current gdp value
+                                    update.selectAll('rect')
+                                         .transition()
+                                         .delay(1500)
+                                         .duration(1000)
+                                         .attr('width', d => xScale(d.gdp));
+                                });
+                            },
+                            exit => {
+                                exit.call(exit => {
+                                    // Animate the text value to size=0
+                                    exit.selectAll('text')
+                                        .transition()
+                                        .duration(500)
+                                        .style('font-size','0em');
+                                    // Animate the rect's width to 0
+                                    exit.selectAll('rect')
+                                        .transition()
+                                        .duration(500)
+                                        .attr('width',0)
+                                        .end()                  // after the transition ends,
+                                        .then(() => {           // remove the elements in the
+                                            exit.remove();      // exit selection
+                                        });
+                                })
+                            }
+                        );
+                }
+
+            </script>
+            <br/><br/><br/>
+        </div>
+    </body> 
+    
+</html>
