@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+ <html>
+    <head>
+        <title>D3 Color and layout examples</title>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" />
+        <style>
+            .row {
+                margin-top: 30px;
+            }
+            svg {
+                border:1px solid gray;
+                width:100%;
+                height:1400px;
+            }
+            circle {
+                stroke:black;
+                stroke-width:1;
+            }
+            text {
+                alignment-baseline: middle;
+            }
+            rect, .kde-path {
+                fill: lavenderblush;
+                stroke: black;
+            }
+        </style>
+    </head>
+    <body>
+        <div class='container'>
+
+            <h1>Color and Layout Examples</h1>
+            <div class='row'>
+                <div class='col-12'>
+                    <svg id='color-svg'></svg>
+                </div>
+            </div>
+
+            <script>
+
+                // The data array
+                let data = [ 1, 3, 3, 6, 10, 10, 13, 14, 15, 16, 17, 19, 20 ];
+
+                // get refernce to the SVG
+                let svg = d3.select('#color-svg');
+                let svgWidth = +svg.node().clientWidth;
+                let stepSize = (svg.node().clientWidth - 120) / data.length;
+
+                // Add text labels
+                let labels = [ 'Categorical 1','Categorical 2','Manual 1', 'Manual 2','Viridis','Quantile 1', 'Quantille 2', 'Threshold'];
+
+                svg.selectAll('.text-label')
+                    .data(labels)
+                    .join('text')
+                    .classed('text-label',true)
+                    .attr('x',10)
+                    .attr('y', (d,i) => 80 + i * 40)
+                    .text(d => d);
+
+                  
+                // Show the data array
+                svg.selectAll('.text-data')
+                    .data(data)
+                    .join('text')
+                    .classed('text-data',true)
+                    .attr('x', (d,i) => 120 + i*stepSize)
+                    .attr('y',40)
+                    .style('text-anchor','middle')
+                    .text(d => d);
+                
+                /*
+                    Categorical color scales are for showing categorical or
+                    qualitative attributes.
+                    https://observablehq.com/@d3/d3-scaleordinal
+
+                    The idea is that you have several groups, and you want to
+                    assign a color to each group. Here each group is the number
+                */
+
+                // using a predefined D3 color scale
+                // note I can do domain(data) since the data items 
+                // are simply numbers and not objects.
+                const categoricalScale1 = d3.scaleOrdinal(d3.schemeCategory10)
+                                            .domain(data);
+
+                svg.selectAll('.circles-1')
+                    .data(data)
+                    .join('circle')
+                    .classed('circles-1',true)
+                    .attr('cx', (d,i) => 120 + i*stepSize)
+                    .attr('cy', 80)
+                    .attr('r', 10)
+                    .style('fill', (d,i) => categoricalScale1(d));
+
+                // using my own color scale
+                // notice how the colors repeat for multiple numbers?
+                const categoricalScale2 = d3.scaleOrdinal()
+                                            .domain(data)
+                                            .range(['red','white','blue']);
+
+                svg.selectAll('.circles-2')
+                    .data(data)
+                    .join('circle')
+                    .classed('circles-2',true)
+                    .attr('cx', (d,i) => 120 + i*stepSize)
+                    .attr('cy', 120)
+                    .attr('r', 10)
+                    .style('fill', (d,i) => categoricalScale2(d));
+
+
+                /*
+                    Sequential color scales map ordered data.
+                */
+
+                // create a manual linear color scale from low to high
+                // using scaleLinear()
+
+                // One problem here: If you go between two hues, the 
+                // interpolation between them may not match human
+                // perception. It's better to map from white/black to a hue.
+                let manualScale1 = d3.scaleLinear()
+                                    .domain(d3.extent(data)) // [1, 20]
+                                    .range(['lightgreen','darkslateblue']);
+                                    // .range(['white','black']);
+
+                svg.selectAll('.circles-3')
+                    .data(data)
+                    .join('circle')
+                    .classed('circles-3',true)
+                    .attr('cx', (d,i) => 120 + i*stepSize)
+                    .attr('cy', 160)
+                    .attr('r', 10)
+                    .style('fill', (d,i) => manualScale1(d));
+
+
+                // You can also add middle values and colors, for example to 
+                // create a diverging color scale. I am computing a 'start',
+                // 'middle', and 'end' value that is entered into the
+                // domain. The middle value can either be semantically important
+                //  (such as a zero value in a postiive/negative dataset), or it
+                // can be a value like the mean or median.
+                let min = d3.min(data); 
+                let max = d3.max(data);
+                let mean = d3.mean(data);
+                let median = d3.median(data);
+
+                console.log(`mean = ${mean}, median = ${median}`);
+                
+                let manualScale2 = d3.scaleLinear()
+                                .domain([min, mean, max])
+                                .range(['red','yellow','green']);
+
+                svg.selectAll('.circles-4')
+                    .data(data)
+                    .join('circle')
+                    .classed('circles-4',true)
+                    .attr('cx', (d,i) => 120 + i*stepSize)
+                    .attr('cy', 200)
+                    .attr('r', 10)
+                    .style('fill', (d,i) => manualScale2(d));
+
+                
+                // create a sequential color scale using a predefined palette
+                let seqScale1 = d3.scaleSequential(d3.interpolateViridis)
+                                         .domain(d3.extent(data));
+                                
+                svg.selectAll('.circles-5')
+                    .data(data)
+                    .join('circle')
+                    .classed('circles-5',true)
+                    .attr('cx', (d,i) => 120 + i*stepSize)
+                    .attr('cy', 240)
+                    .attr('r', 10)
+                    .style('fill', (d,i) => seqScale1(d));
+
+
+
+                /*
+                    Quantile and threshold scales are ways to bin data
+
+                    Quantile scales separate the data into roughly equal bins of similar size.
+
+                    Threshold scales let you directly specify the cut values to separate classes.
+
+                    Quantize scales are another option, see here:
+                    https://observablehq.com/@d3/quantile-quantize-and-threshold-scales
+                */
+
+                // Create a quantile scale with 3 bins: 
+                //      lower 1/3
+                //      middle 1/3
+                //      higher  1/3
+                // quantileScale.quantiles() returns the quantile thresholds
+
+                let quantileScale1 = d3.scaleQuantile()
+                                        .domain(d3.extent(data))
+                                        .range(['red','beige','blue']);
+
+                svg.selectAll('.circles-6')
+                    .data(data)
+                    .join('circle')
+                    .classed('circles-6',true)
+                    .attr('cx', (d,i) => 120 + i*stepSize)
+                    .attr('cy', 280)
+                    .attr('r', 10)
+                    .style('fill', (d,i) => quantileScale1(d));
+
+                // An example with a predefined sequential colormap
+                // You manually define the thresholds
+                // https://observablehq.com/@d3/sequential-scales
+                let quantileScale2 = d3.scaleSequentialQuantile(d3.interpolateViridis)
+                                        .domain([1, 7, 13, 20])
+                svg.selectAll('.circles-7')
+                    .data(data)
+                    .join('circle')
+                    .classed('circles-7',true)
+                    .attr('cx', (d,i) => 120 + i*stepSize)
+                    .attr('cy', 320)
+                    .attr('r', 10)
+                    .style('fill', (d,i) => quantileScale2(d));
+
+                // Another way to do manual thresholds
+                // "Everything between below 10 is red, 
+                //  10-14 is white, 15 or above is blue"
+                let threshScale = d3.scaleThreshold()
+                                    .domain([10,15])
+                                    .range(['red','white','blue']);
+
+                svg.selectAll('.circles-8')
+                    .data(data)
+                    .join('circle')
+                    .classed('circles-8',true)
+                    .attr('cx', (d,i) => 120 + i*stepSize)
+                    .attr('cy', 360)
+                    .attr('r', 10)
+                    .style('fill', (d,i) => threshScale(d));
+                
+
+
+
+                /*
+                    D3 Histogram example
+
+                    Relevant Links:
+                    https://www.d3-graph-gallery.com/histogram.html
+                    https://observablehq.com/@d3/d3-bin                    
+
+                    A histogram is a simple way to represent data that's 
+                    gruoped into bins. A histogram displays
+                    the distribution of the values, and can be drawn like a
+                    normal bar chart (ie, append('rect') calls).
+                */
+
+                let histHeight = 200;
+                let histWidth = svgWidth-40;
+                let histG = svg.append('g')
+                                .attr('transform',`translate(${20},${450})`);
+
+                // generate 200 random numbers between
+                // 1-500 with a given distribution.
+                let histData = [];
+                for(let i = 0; i < 200; i++ ) {
+                    // let num = d3.randomUniform(1,500)();
+                    let num = d3.randomNormal(.4, .2)() * 500;
+                    histData.push(num);
+                }
+
+                
+
+                // create the x scale/axis
+                let xScale = d3.scaleLinear()
+                                .domain([0, 500])
+                                .range([0, histWidth]);
+                histG.append('g')
+                     .call(d3.axisBottom(xScale))
+                     .attr('transform',`translate(0,${histHeight})`);
+                
+                // histogram generator with a defined 
+                // number of uniformly-spaced bins using
+                // xScale.ticks(numberOfBins)
+                let numberOfBins = 20;
+                let histogram = d3.histogram()
+                                    .value(d => d)
+                                    .domain([0,500])
+                                    // .thresholds(numberOfBins);
+                                    .thresholds(xScale.ticks(numberOfBins));
+                let bins = histogram(histData);
+                console.log(bins);
+                
+                // create the y scale/axis
+                let yScale = d3.scaleLinear()
+                                .domain([0, d3.max(bins, d => d.length)])
+                                .range([histHeight, 0]);
+                histG.append('g')
+                     .call(d3.axisLeft(yScale));
+                
+                // append the histogram like a bar chart
+                histG.selectAll('rect')
+                     .data(bins)
+                     .join('rect')
+                     .attr('transform', d => `translate(${xScale(d.x0)},${yScale(d.length)})`)
+                     .attr('width', d => xScale(d.x1) - xScale(d.x0))
+                     .attr('height', d => histHeight - yScale(d.length))
+                     
+                /*
+                    D3 density curve example
+                    Similar to a histogram, but uses a smoothed area instead of bars
+
+                    https://www.d3-graph-gallery.com/graph/density_basic.html
+                */
+
+                let kdeG = svg.append('g')
+                              .attr('transform',`translate(${20},${720})`);             
+
+                // Begin functions to compute density
+                function kernelDensityEstimator(kernel, X) {
+                    return function(V) {
+                        return X.map(function(x) {
+                            return [x, d3.mean(V, function(v) { return kernel(x - v); })];
+                        });
+                    };
+                }
+                function kernelEpanechnikov(k) {
+                    return function(v) {
+                        return Math.abs(v /= k) <= 1 ? 0.75 * (1 - v * v) / k : 0;
+                    };
+                }
+                // End functions to compute density
+
+                // Compute a kernel density estimate on the data to 
+                // get the frerquency of values [0-1] scale.
+                let kde = kernelDensityEstimator(kernelEpanechnikov(7), xScale.ticks(numberOfBins));
+                var density =  kde( histData.map( d => d));
+                console.log(density);
+                // // add a start/end point so the fill looks correct
+                density.unshift([0,0]);
+                density.push([500, 0]);
+                
+                // create a y axis for this KDE plot
+                // and append the x/y axes. (Note the
+                // x-axis can be re-used from the histgram.
+                let yScaleKDE = d3.scaleLinear()
+                                .range([histHeight, 0])
+                                .domain([0, 0.01]);
+                kdeG.append('g')
+                     .call(d3.axisLeft(yScaleKDE));
+                kdeG.append('g')
+                    .call(d3.axisBottom(xScale))
+                    .attr('transform',`translate(0,${histHeight})`);
+
+                let kdeLine = d3.line()
+                                .curve(d3.curveBasis)
+                                 .x(d => xScale(d[0]))
+                                 .y(d => yScaleKDE(d[1]));
+
+                // append kde-smoothed area
+                kdeG.append('path')
+                    .datum(density)
+                    .classed('kde-path',true)
+                    .style('stroke','black')
+                    // .style('fill','none')
+                    .attr('d', kdeLine);
+
+
+
+                /*
+                    Arc example
+
+                    Relevant Links:
+                    https://www.d3-graph-gallery.com/donut.html
+                */
+
+                let donutG = svg.append('g')
+                                .attr('transform',`translate(${svgWidth/2},${1150})`)
+                
+                // create a pie generator and comppute the 
+                // position of each group on the pie
+                let pie = d3.pie()
+                            .value(d => d);
+                let pieData = pie(data);
+                let pieArc = d3.arc()
+                                .innerRadius(80) 
+                                .outerRadius(120)
+                                // .padAngle(.02)
+
+                // create the donut chart
+                // Each arc in the chart is a path
+                donutG.selectAll('.donut-arc')
+                        .data(pieData)
+                        .join('path')
+                        .attr('d', pieArc)
+                        .style('fill', d => categoricalScale1(d.data))
+                        // .style('fill', d => seqScale1(d.data))
+                        .style('stroke','black');
+
+                // Add the numbers around the outside of the arcs
+                let textArc = d3.arc()
+                                .innerRadius(140)
+                                .outerRadius(140);
+                donutG.selectAll('.donut-text')
+                        .data(pieData)
+                        .join('text')
+                        .attr('transform', d => {
+                            let pos = textArc.centroid(d);
+                            return `translate(${pos})`;                            
+                        })
+                        .style('text-anchor','middle')
+                        .text(d => d.data)
+
+                // // For a nicer version of annotations, see this example
+                // // https://www.d3-graph-gallery.com/graph/donut_label.html
+
+                
+
+            </script>
+    </body>
+</html>

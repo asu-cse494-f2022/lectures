@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+ <html>
+    <head>
+        <title>D3 Map examples</title>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <!-- To get more projections, load the geo-projection library
+             Documentation here: https://github.com/d3/d3-geo-projection
+         -->
+        <script src="https://d3js.org/d3-geo-projection.v3.min.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" />
+
+        <!-- Add these elements to access Leaflet (CSS must go before JS file) -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+   integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+   crossorigin=""/>
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+   integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+   crossorigin=""></script>
+        <style>
+            svg {
+                border:1px solid gray;
+                width:100%;
+                height:600px;
+            }
+            select, input[type=button] {
+                width:100%;
+                margin-bottom:5px;
+            }
+            .row {
+                margin-top: 15px;
+            }
+            .country, .state {
+                stroke: black;
+                stroke-width: 1;
+                fill: honeydew;
+            }
+            .graticule {
+                fill: none;
+                stroke: #777;
+                stroke-width:.5;
+                stroke-opacity:.5;
+            }
+            .boundary {
+                fill:none;
+                stroke: black;
+                stroke-width:2;
+                stroke-opacity:1;
+            }
+        </style>
+    </head>
+    <body>
+        <div class='container'>
+
+            <div class='row'>
+                <div class='col-12'>
+                    <h1>D3 Map Examples</h1>
+                </div>
+            </div>
+
+
+            <!--
+
+                Examples of D3 projections
+
+                d3.[projections] are similar to d3 scales, in that they transform
+                data from 'data space' to 'pixel space'. However, projections translate a 
+                lat/long position (an array of 2 numbers), and transform these values 
+                based on a map projection such as Mercator or Azimuthal.
+
+            -->
+
+            <div class='row'>
+                <div class='col-12'>
+                    <h2>Projections and Navigation</h2>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-lg-2 col-md-3 col-sm-6'>
+                    <select id='map-projection-select' onchange='resetZoom();'>
+                        <option value='geoWinkel3'>Winkel3</option>
+                        <option value='geoMercator'>Mercator</option>
+                        <option value='geoAiry'>Airy</option>
+                        <option value='geoAitoff'>Aitoff</option>
+                        <option value='geoAugust'>August</option>
+                        <option value='geoAzimuthalEqualArea'>Azimuthal Equal Area</option>
+                    </select>
+                </div>
+                <div class='col-lg-2 col-md-3 col-sm-6'>
+                    <input type='button' value='Reset Zoom' onclick='resetZoom();'/>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-md-12 col-sm-12'>
+                    <svg id='geojson-map'></svg>
+                </div>
+            </div>
+
+            <script>
+
+                // Get a reference to the SVG and its height/width
+                var geoJsonSvg = d3.select('#geojson-map');
+                var geoJsonWidth = geoJsonSvg.node().clientWidth;
+                var geoJsonHeight = geoJsonSvg.node().clientHeight;
+                
+                // A variable to store the world geojson data
+                var worldData;
+
+                // Load the world geojson file
+                d3.json('world.geojson').then(data => {
+                    /* GeoJson files store data in the following format:
+                          type: "FeatureCollection"      // metadata label
+                          features:                      // an array of region
+                              [
+                                {                       // each region in the array has:
+                                    type: "Feature",        // metadata label
+                                    geometry:  { ... },     // the lat/long coordinates of the region's border
+                                    properties: {           // misc properties about the region, such as the name
+                                        name: "Arizona",        
+                                        ...                 
+                                    }
+                                } 
+                              ]
+                    */
+
+                    worldData = data;
+                    console.log(worldData);
+
+                    // once the data is loaded, draw the map
+                    updateMap();
+
+                });
+
+                /* Draw or update the map based on the worldData object
+                    and the current projection
+                */
+                function updateMap() {
+                    // Get the current projection based on #map-projection-select
+                    const projection = getProjection();
+
+                    // Scale and position your map in the SVG
+                    
+                    // Manually position the projection
+                    // projection
+                    //     .scale(geoJsonHeight * .2)                // manual positioning
+                    //     .center(d3.geoCentroid(worldData))
+                    //     .translate([geoJsonWidth * .55, geoJsonHeight * .35]);
+
+                    // Responsive design based on the width and height of the svg
+                    projection
+                        .fitSize([geoJsonWidth-50,geoJsonHeight-50], worldData)
+                        .translate([geoJsonWidth/2, geoJsonHeight/2]);
+                    
+                    // this is similar to a d3.line() generator, except now we are drawing
+                    // the outline of each geojson shape according to the given map projection
+                    const geoPath = d3.geoPath().projection(projection);
+
+                    // We'll use joins to either
+                    //  1. Add countries if they haven't yet been added
+                    //  2. Transition the countries' shapes based on a new projection
+                    //
+                    // Note the vector-effect=non-scaling-stroke line.
+                    // This keeps the path strokes the same size when scaling.
+                    // (This doesn't work in IE.)
+                    // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/vector-effect
+                    geoJsonSvg.selectAll('.country')
+                                .data(worldData.features)
+                                .join(
+                                    enter => {
+                                        enter.append('path')
+                                            .classed('country',true)
+                                            .attr('vector-effect','non-scaling-stroke') 
+                                            .attr('d', geoPath);
+                                    },
+                                    update => {
+                                        update.call(update => update.transition()
+                                                                    .duration(500)
+                                                                    .attr('d', geoPath));
+                                    }
+                                );
+                    
+                    
+                    // Add graticules
+                    let graticule = d3.geoGraticule();
+                    geoJsonSvg.selectAll('.graticule')
+                                .data(graticule.lines())
+                                .join(
+                                    enter => {
+                                        enter.append('path')
+                                             .classed('graticule', true)
+                                             .attr('vector-effect','non-scaling-stroke') 
+                                             .attr('d', geoPath);
+                                    },
+                                    update => {
+                                        update.call(update => update.transition()
+                                                                    .duration(500)
+                                                                    .attr('d', geoPath));
+                                    }
+                                );
+                    
+                    // You can also add border graticule if desired
+                    //   Note this isn't drawn using joins!
+                    geoJsonSvg.selectAll('.boundary').remove();
+                    geoJsonSvg.append('path')
+                            .datum(graticule.outline)
+                            .attr("class", "boundary")
+                            .attr('vector-effect','non-scaling-stroke') 
+                            .style('opacity',0)
+                            .attr('d',geoPath)
+                            .transition()
+                            .delay(500)
+                            .style('opacity',1);
+                }
+
+                function getProjection() {
+                    let selectVal = d3.select('#map-projection-select').property('value');
+                    if(selectVal == 'geoMercator')
+                        return d3.geoMercator();
+                    else if(selectVal == 'geoAiry')
+                        return d3.geoAiry();
+                    else if(selectVal == 'geoAitoff')
+                        return d3.geoAitoff();
+                    else if(selectVal == 'geoAugust')
+                        return d3.geoAugust();
+                    else if(selectVal == 'geoAzimuthalEqualArea')
+                        return d3.geoAzimuthalEqualArea();
+                    else if(selectVal == 'geoWinkel3')
+                        return d3.geoWinkel3();
+                    else 
+                        // throw statements can be used to generate an error 
+                        // https://www.w3schools.com/jsref/jsref_throw.asp
+                        throw `Error: You selected an option that is not handled: ${selectVal}`;
+                }
+
+                /* 
+                    Adding zoom and pan to the world map
+                    Note this does not include rotate, which is slightly more involved.
+                        https://bl.ocks.org/HarryStevens/1c953744582a7b50d77f79d206dbfbc6
+                        http://bl.ocks.org/tlfrd/df1f1f705c7940a6a7c0dca47041fec8
+                */
+                const zoom = d3.zoom()                  // create a Zoom function
+                                .scaleExtent([.5,8])
+                                .on('zoom',zoomed)
+                geoJsonSvg.call(zoom);                  // attach to the svg
+
+                // This function is called when a zoom or pan is detected
+                function zoomed() {                     
+                    geoJsonSvg.selectAll('.country')
+                            .attr('transform', d3.event.transform);
+                    geoJsonSvg.selectAll('.graticule')
+                            .attr('transform', d3.event.transform);
+                    geoJsonSvg.selectAll('.boundary')
+                            .attr('transform', d3.event.transform);
+                }
+
+                /*
+                    This is called when the Reset Zoom button is clicked.
+                    d3.zoomIdentity is the identity transform
+                */
+                function resetZoom() {
+                    geoJsonSvg.transition()
+                            .duration(500)
+                            .call(zoom.transform, d3.zoomIdentity)
+                            .end()
+                            .then(() => { updateMap(); })
+                }
+
+            </script>
+            
+
+
+
+
+            <!--
+
+                This example shows how to extract a specific region from a geojson
+                dataset and how to add a layer of data items on top of a map.
+
+            -->
+            <div class='row'>
+                <div class='col-12'>
+                    <h2>Extracting regions and adding layers</h2>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-12'>
+                    <input type='checkbox' id='cities-checkbox' onclick='showCities();'>
+                    &nbsp;Show Cities
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-12'>
+                    <svg id='states-all-map'></svg>
+                </div>
+            </div>
+
+            <script>
+
+                // SVG variables
+                var usaSvg = d3.select('#states-all-map')
+                var usaSvgWidth = usaSvg.node().clientWidth;
+                var usaSvgHeight = usaSvg.node().clientHeight;
+
+                // data variables
+                var usaMapData;
+                var usaCitiesData;
+
+                // The projection for the USA map
+                var usaProjection;
+                
+                // Notice that we are loading two files here using Promise, and 
+                // waiting until both files are loaded before executing the 
+                // anonymous function.
+                Promise.all([d3.json('us.geojson'),
+                             d3.csv('us-state-capitals.csv')])
+                            .then(data => {
+                    usaMapData = data[0];
+                    usaCitiesData = data[1];
+
+                    // Try switching this to geoAlbers and see how the view changes
+                    usaProjection = d3.geoAlbersUsa()    
+                                       .fitSize([geoJsonWidth,geoJsonHeight], usaMapData);
+                    
+                    const geoPath = d3.geoPath().projection(usaProjection);
+                    
+                    // Draw the map and add a click interaction
+                    usaSvg.selectAll('.state')
+                            .data(usaMapData.features)
+                            .join('path')
+                            .classed('state',true)
+                            .attr('d',geoPath)
+                            .on('click', function(d) {
+                                console.log(`clicked on ${d.properties.name}`);
+                                drawSelectedState(d.properties.name);
+                            });
+
+                    drawLeaflet(); 
+                    
+                });
+
+                // When a state is clicked, draw it above the map.
+                function drawSelectedState(stateName) {
+                    
+                    // If a state is currently shown agove the map, delete it
+                    usaSvg.selectAll('.selectedState').remove();
+
+                    // create a glyph with class='selectedState' and
+                    // add a rectangle and a text label to it.
+                    var glyph = usaSvg.append('g')
+                                    .classed('selectedState', true)
+                                    .attr('transform',`translate(${usaSvgWidth/2-75},${usaSvgHeight/2-75})`);
+                    glyph.append('rect')
+                        .attr('width',150)
+                        .attr('height',150)
+                        .style('stroke','black')
+                        .style('fill','white')
+                        .on('click',function(d) {
+                            usaSvg.selectAll('.selectedState')
+                                    .transition()
+                                    .style('opacity',0)
+                                    .remove();
+                        });
+                    glyph.append('text')
+                        .attr('dx',75)    
+                        .attr('dy',20)
+                        .style('text-anchor','middle')
+                        .text(stateName);
+
+                    // get the data for the current state and 
+                    // create a new geojson data structure
+                    // that contains only that state
+                    let s = usaMapData.features.filter(d => d.properties.name == stateName);
+                    let stateMapData = 
+                        {
+                            type: 'FeatureCollection',
+                            features: s
+                        };
+                    
+                    // create a projection and geoPath for the
+                    // single-state geojson data structure
+                    // with a small size (140x120)
+                    let stateProjection = d3.geoMercator()
+                                            .fitSize([140,120], stateMapData);
+                    const geoPath = d3.geoPath().projection(stateProjection);
+
+                    // append the state on the glyph
+                    glyph.append('g') 
+                        .attr('transform','translate(5,25)')
+                        .selectAll('.state')
+                        .data(stateMapData.features)
+                        .enter()
+                        .append('path')
+                        .classed('state',true)
+                        .attr('d', geoPath);
+                }
+
+                /*
+                    If the checkbox is checked, add cities from the 
+                    us-state-capitals.csv file to the map.
+
+                    Notice how the x/y positions are positioned based on the
+                    map projection.
+                */
+                function showCities() {
+
+                    usaSvg.selectAll('.cities').remove();
+
+                    if(!d3.select('#cities-checkbox').property('checked')) {
+                        return;
+                    }
+
+                    usaSvg.selectAll('.cities')
+                            .data(usaCitiesData)
+                            .enter()
+                            .append('circle')
+                            .classed('cities',true)
+                            .attr('cx', d => usaProjection([+d.longitude, +d.latitude])[0])
+                            .attr('cy', d => usaProjection([+d.longitude, +d.latitude])[1])
+                            .attr('r',5)
+                            .style('fill','orange')
+                            .style('opacity',.5)
+
+                }
+
+                
+            </script>
+
+
+            <!--
+                Using Leaflet for maps:
+                    - Make sure you link to Leaflet's CSS and JS files
+                        https://leafletjs.com/
+                    - Put a div (with an ID) where you want your map to be.
+                        The div should have a defined width and height
+                    - Create the map via L.map('divID').setView([long,lat], zoom);
+                    - Add a tileLayer to the map. You can find example tileLayers here: 
+                        https://leaflet-extras.github.io/leaflet-providers/preview/
+                    - Add data items and other layers on top of the map.
+                        https://leafletjs.com/examples.html
+                    - Add interactivity if necessary (ie, clicking on data items, etc)
+            -->
+            
+             <div class='row'>
+                <div class='col-12'>
+                    <h2>Leaflet</h2>
+                </div>
+            </div>
+            <div class='row'>
+                <div class='col-12'>
+                    <div id='leaflet-map' style='width:100%; height:600px;border:1px solid gray'></div>
+                </div>
+            </div>    
+            <script>
+
+                // This doesn't work because we need the usaCitiesData in drawLeaflet();
+                // document.addEventListener('DOMContentLoaded', drawLeaflet);
+                
+                function drawLeaflet() {
+
+                    // Create the map 
+                    var leafletMap = L.map('leaflet-map').setView([33.448, -112.074], 9);
+                    
+                    // Add a tile layer
+                    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', 
+                                {
+	                                maxZoom: 19,
+	                                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>'
+                                }).addTo(leafletMap);
+
+                    // Add the state capitals as Leaflet markers
+                    usaCitiesData.forEach(d => {
+                        L.marker([ +d.latitude, +d.longitude ]).addTo(leafletMap);
+                    });
+
+                }
+
+            </script>
+
+        </div>
+    </body> 
+</html>
