@@ -2,11 +2,12 @@
  <html>
     <head>
         <title>D3 Map examples</title>
-        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" />
+        <script src="https://d3js.org/d3.v7.min.js"></script>
         <!-- To get more projections, load the geo-projection library
              Documentation here: https://github.com/d3/d3-geo-projection
          -->
-        <script src="https://d3js.org/d3-geo-projection.v3.min.js"></script>
+        <script src="https://d3js.org/d3-geo-projection.v4.min.js"></script>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" />
 
         <!-- Add these elements to access Leaflet (CSS must go before JS file) -->
@@ -212,7 +213,7 @@
                 }
 
                 function getProjection() {
-                    let selectVal = d3.select('#map-projection-select').property('value');
+                    let selectVal = d3.select('#map-projec  tion-select').property('value');
                     if(selectVal == 'geoMercator')
                         return d3.geoMercator();
                     else if(selectVal == 'geoAiry')
@@ -232,26 +233,23 @@
                 }
 
                 /* 
-                    Adding zoom and pan to the world map
+                    Add zoom and pan to the world map
                     Note this does not include rotate, which is slightly more involved.
                         https://bl.ocks.org/HarryStevens/1c953744582a7b50d77f79d206dbfbc6
                         http://bl.ocks.org/tlfrd/df1f1f705c7940a6a7c0dca47041fec8
                 */
-                const zoom = d3.zoom()                  // create a Zoom function
-                                .scaleExtent([.5,8])
-                                .on('zoom',zoomed)
-                geoJsonSvg.call(zoom);                  // attach to the svg
-
-                // This function is called when a zoom or pan is detected
-                function zoomed() {                     
-                    geoJsonSvg.selectAll('.country')
-                            .attr('transform', d3.event.transform);
-                    geoJsonSvg.selectAll('.graticule')
-                            .attr('transform', d3.event.transform);
-                    geoJsonSvg.selectAll('.boundary')
-                            .attr('transform', d3.event.transform);
-                }
-
+                var zoom = d3.zoom()
+                             .scaleExtent([.5, 8])
+                             .on('zoom', function(event) {
+                                    geoJsonSvg.selectAll('.country')
+                                              .attr('transform', event.transform);
+                                    geoJsonSvg.selectAll('.graticule')
+                                              .attr('transform', event.transform);
+                                    geoJsonSvg.selectAll('.boundary')
+                                              .attr('transform', event.transform);
+                                    
+                            });
+                            geoJsonSvg.call(zoom);                  // attach to the svg
                 /*
                     This is called when the Reset Zoom button is clicked.
                     d3.zoomIdentity is the identity transform
@@ -328,7 +326,7 @@
                             .join('path')
                             .classed('state',true)
                             .attr('d',geoPath)
-                            .on('click', function(d) {
+                            .on('click', function(event, d) {
                                 console.log(`clicked on ${d.properties.name}`);
                                 drawSelectedState(d.properties.name);
                             });
