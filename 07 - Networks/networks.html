@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+ <html>
+    <head>
+        <title>Basic network</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" />
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            svg {
+                border:1px solid gray;
+                width: 95%;
+                max-width:700px;
+                height:400px;
+            }
+            .node {
+                stroke: black;
+                stroke-width: 1px;
+            }
+            .node-label {
+                font-size: .8em;
+                text-anchor: middle;
+                alignment-baseline: middle;
+            }
+            .link {
+                stroke: #999;
+                stroke-width:2px;
+                stroke-opacity: 0.5;
+                fill:none;
+            }
+        </style>
+    </head>
+    <body>
+        <div class='container-fluid text-center'>
+            <h1>Network layouts</h1>
+            <svg id='svg-simple'></svg>
+            <svg id='svg-arc'></svg>
+            <svg id='svg-circular'></svg>
+        </div>
+
+        <script>
+            let svgSimple = d3.select('#svg-simple');
+            let svgWidth = svgSimple.node().clientWidth;
+            let svgHeight = svgSimple.node().clientHeight;
+            
+
+            /*
+                To create a D3 force-directed graph, you need 3 things:
+                1) A set of nodes
+                2) A d3.simulation
+                3) Forces to act on the simulation
+
+                What about links? They're useful, definitely, but not required.
+                We'll look at them down below.
+            */
+
+            // Here's the set of nodes.
+            let nodes = [
+                            { name: 'Leslie', sex: 'F' },
+                            { name: 'Ron', sex: 'M' },
+                            { name: 'Andy', sex: 'M' },
+                            { name: 'April', sex: 'F' },
+                            { name: 'Ben', sex: 'M' },
+                            { name: 'Tom', sex: 'M' },
+                            { name: 'Chris', sex: 'M' },
+                            { name: 'Ann', sex: 'F' },
+                            { name: 'Donna', sex: 'F' },
+                            { name: 'Jerry', sex: 'M' }
+                        ];
+
+            // Here's the d3.simulation.
+            let simulation1 = d3.forceSimulation()
+                                .nodes(nodes);
+            
+            /* 
+                The simulation is the 'engine' of the force directed graph.
+                - It determines the forces applied to each node and updates its position
+                - It decides when to stop updating the layout
+                - It has a number of variables to control behavior
+                    > center: attracts nodes to a specific position (ie, center of SVG)
+                    > many-body: apply a force between all nodes
+                                 d3.forceManyBody() is default params, but can also modify
+                                 strength:
+                                    if positive, simulates gravity (attraction) between nodes,
+                                    if negative, apply charge (repulsion) between nodes
+                    > collide: consider nodes as circles w/ radius and avoid overlapping
+                    > links: pull linked nodes together based on a link's distance
+                            (we don't yet have links)
+                    > alpha: the 'energy' of the graph at each iteration, which decreases
+                             over iterations. When alpha is under alphaMin, the simulation stops
+            */
+
+            // Let's add a many-body force using the default settings (d3.forceManyBody) 
+            // plus collision avoidance and centering.
+            simulation1.force('charge',d3.forceManyBody()) 
+                       .force('collide', d3.forceCollide())
+                       .force('center', d3.forceCenter( svgWidth/2, svgHeight/2 ));
+            
+            // Now add the nodes to svg as circles
+            let simpleNodes = svgSimple.selectAll('.node')
+                                      .data(nodes)
+                                      .join('circle')
+                                      .classed('node',true)
+                                      .style('fill', d => d.sex == 'F' ? 'khaki' : 'paleturquoise' )
+                                      .attr('r', 20);
+            let simpleLabels = svgSimple.selectAll('.node-label')
+                                      .data(nodes)
+                                      .join('text')
+                                      .classed('node-label', true)
+                                      .text(d => d.name)
+
+            /*
+                Now we want to use the simulation to update the locations 
+                of the nodes after every tick (iteration) of the simulation.
+            */
+
+           // This function will update the positions of the cirlces and labels
+           function updateLayout1() {
+                simpleNodes.attr('cx', d => d.x)
+                            .attr('cy', d => d.y);
+                simpleLabels.attr('x', d => d.x)
+                            .attr('y', d => d.y);
+           }
+
+           // Now instruct the simulation to call updateLayout at every iteration.
+           // For debugging, we'll print out the nodes dataset when the simulation stops.
+           // Notice that each item in nodes now has extra attributes: index, vx, vy, x, y.
+           simulation1.on('tick', updateLayout1)
+                      .on('end', () => { console.log(nodes); });
+        
+           /* 
+                Now let's add links to the graph by doing the following.
+                - Create the link data
+                - Create a link force and add it to simulation1
+                - phyiscally draw the links on the page
+                - modify updateLayout to include the link positionin
+           */
+
+           // Here's the links data
+           let links = [
+                            { source: 'Leslie', target: 'Ron' },
+                            { source: 'Leslie', target: 'Ben' },
+                            { source: 'Leslie', target: 'Ann' },
+                            { source: 'Ron', target: 'Chris' },
+                            { source: 'Ron', target: 'Donna' },
+                            { source: 'Ron', target: 'April' },
+                            { source: 'Ron', target: 'Jerry' },
+                            { source: 'Andy', target: 'April' },
+                            { source: 'Andy', target: 'Ann' },
+                            { source: 'Ben', target: 'Chris' },
+                            { source: 'Tom', target: 'Ann' },
+                            { source: 'Tom', target: 'Donna' },
+                            { source: 'Chris', target: 'Ann' }
+                        ];
+
+            // Here's the link force
+            // the id() function is an accessor function that maps
+            // data in the 'nodes' array to text in the 'links' array.
+            let linkForce1 = d3.forceLink(links)
+                               .id(d => d.name);
+
+            // Adding the link force to the simulation
+            // and call and updated layout function that 
+            // also updates line positions
+            simulation1.force('links', linkForce1)
+                        .on('tick', updateLayout2);
+
+            // Now draw the links on the svg
+            let simpleLinks = svgSimple.selectAll('.link')
+                                        .data(links)
+                                        .join('line')
+                                        .classed('link',true);
+
+            // And an updated layout function
+            function updateLayout2() {
+                simpleNodes.attr('cx', d => d.x)
+                            .attr('cy', d => d.y);
+                simpleLabels.attr('x', d => d.x)
+                            .attr('y', d => d.y);
+                simpleLinks.attr('x1', d => d.source.x)
+                           .attr('y1', d => d.source.y)
+                           .attr('x2', d => d.target.x)
+                           .attr('y2', d => d.target.y);
+           }
+
+           // Adding links pulled the nodes very close together.
+           // There are *lots* of variables for modifying simualtions, but you can
+           // play around with modifying the distance and strength of the linkForce,
+           // as well as the charge force on the simulation, to affect the layout
+           linkForce1.distance(50)   // default distance is 30
+                    .strength(.33)   // default strength is 1
+           simulation1.force('charge', d3.forceManyBody().strength(-400));
+                     
+            // Quick note: these links will be drawn on top of nodes and labels, 
+            // since D3 draws elements in the order that they are appended
+            // Normally, you'd add links first, so they sit underneath.
+            // However, d3 also includes selection.raise() and selection.lower()
+            // commands which re-inserts elements either as the last element or
+            // first element under its parent HTML element, which will make it on the
+            // 'top' or 'bottom' of the display.
+            svgSimple.selectAll('.node').raise();
+            svgSimple.selectAll('.node-label').raise();
+
+
+
+
+            /* 
+                Now let's plot the graph as an arc diagram
+
+                Here are the steps:
+                1) Plot the nodes along an axis (in a line)
+                2) Add the links as arcs
+            */
+            let svgArc = d3.select('#svg-arc');
+
+            // Plot the nodes to an axis
+            // You could use a scaleLinear to do this, or write an interval function,
+            // but D3 provides a scalePoint which distributes an array of 
+            // points along a given range interval: 
+            // https://observablehq.com/@d3/d3-scalepoint
+            let xScale = d3.scalePoint()
+                            .domain(nodes.map(d => d.name))
+                            .range([25, svgWidth-25]);
+            
+            // Add the circles and labels
+            svgArc.selectAll('.node')
+                    .data(nodes)
+                    .join('circle')
+                    .classed('node', true)
+                    .style('fill', d => d.sex == 'F' ? 'khaki' : 'paleturquoise' )
+                    .attr('cx', d => xScale(d.name))
+                    .attr('cy', svgHeight * .75)           
+                    .attr('r', 20);
+            svgArc.selectAll('.node-label')
+                    .data(nodes)
+                    .join('text')
+                    .classed('node-label',true)
+                    .attr('x', d => xScale(d.name))
+                    .attr('y', svgHeight * .75)
+                    .text(d => d.name);
+
+           // Now add the links
+           // Instead of using straight lines, add as a curved arc
+           // See this site for examples: https://www.d3-graph-gallery.com/arc
+           svgArc.selectAll('.link')
+                    .data(links)
+                    .join('path')
+                    .classed('link',true)
+                    .attr('d', d => {
+                        // console.log(d);
+                        let start = xScale(d.source.name);   // x position of source node
+                        let end = xScale(d.target.name);     // x position of ending node
+                        return ['M', start, svgHeight*.75,   // arc starts at source node's coordinates
+                                'A',                         // this means we're creating an elliptical arc
+                                (start - end)/2, ',',        // the coordinates of the inflection point
+                                (start - end)/2, 0, 0, ',',    
+                                1,                           // put the arcs on top (0 = underneath)
+                                end, ',', svgHeight*.75]     // arc ends at target node's coordinates
+                            .join(' ');
+                    });
+
+            // put the arcs behind the nodes and labels
+            svgArc.selectAll('.link').lower();
+
+
+
+            /* 
+                Finally, let's do a circular layout.
+                
+                Here's the steps:
+                (1) Calculate the polar coordinates of each node
+                (2) Draw the nodes and links
+            */
+
+            let svgCircular = d3.select('#svg-circular');
+            let circularG = svgCircular.append('g')
+                                    .attr('transform', `translate(${svgWidth/2},${svgHeight/2})`)
+
+            let radius = (svgHeight-60) / 2;
+
+            // Calculate the positions of each node
+            let polarScale = d3.scaleLinear()
+                                .domain([0, nodes.length])
+                                .range([0, 2 * Math.PI]);
+
+            // Convert from polar to cartesian coordinates
+                // x = r cos Θ
+                //  y = r sin Θ
+            nodes.forEach((d,i) => {
+                let theta = polarScale(i);
+                d.theta = theta;
+                d.polarX = radius * Math.cos(theta);
+                d.polarY = radius * Math.sin(theta)
+            });
+
+            // Draw the nodes and links
+            circularG.selectAll('.node')
+                        .data(nodes)
+                        .join('circle')
+                        .classed('node', true)
+                        .style('fill', d => d.sex == 'F' ? 'khaki' : 'paleturquoise' )
+                        .attr('cx', d => d.polarX)
+                        .attr('cy', d => d.polarY)
+                        .attr('r', 20);
+            circularG.selectAll('.node-label')
+                        .data(nodes)
+                        .join('text')
+                        .classed('node-label', true)
+                        .attr('x', d => d.polarX)
+                        .attr('y', d => d.polarY)
+                        .text(d => d.name);
+                        
+            circularG.selectAll('.link')
+                        .data(links)
+                        .join('line')
+                        .classed('link', true)
+                        .attr('x1', d => d.source.polarX)
+                        .attr('y1', d => d.source.polarY)
+                        .attr('x2', d => d.target.polarX)
+                        .attr('y2', d => d.target.polarY);
+
+
+            circularG.selectAll('.link').lower();
+            
+        </script>
+    </body>
+</html>

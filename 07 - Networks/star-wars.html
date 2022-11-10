@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+ <html>
+    <head>
+        <title>Network with states</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" />
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            svg, html, body {
+                width: 100%;
+                height: 100%;
+            }
+            .node {
+                stroke: black;
+                stroke-width: 1px;
+            }
+            .node-label {
+                font-size: 1em;
+                text-anchor: middle;
+                alignment-baseline: middle;
+                fill:white;
+                paint-order: stroke;
+                stroke: #000000;
+                stroke-width: 4px;
+                stroke-linecap: butt;
+                stroke-linejoin: miter;
+                font-weight: 800;
+            }
+            .link {
+                stroke: #999;
+                stroke-width:2px;
+                stroke-opacity: 0.5;
+                fill:none;
+            }
+        </style>
+    </head>
+    <body>
+        <svg></svg>
+    </body>
+    <script>
+        let svg = d3.select('svg');
+        let width = svg.node().clientWidth;
+        let height = svg.node().clientHeight;
+        let nodes, links;
+
+        // d3.json('starwars-episode-1-interactions-allCharacters.json').then(data => {
+        d3.json('starwars-episode-7-interactions-allCharacters.json').then(data => {
+            console.log(data);
+            nodes = data.nodes;
+            links = data.links;
+            
+            drawGraph();
+        });
+
+        function drawGraph() {
+            console.log(nodes)
+
+            let linkForce = d3.forceLink(links)
+                                .id(d => d.index)
+            let simulation = d3.forceSimulation()
+                                .nodes(nodes)
+                                .force('links', linkForce)
+                                .force('collide', d3.forceCollide()
+                                                    .radius(50))
+                                .force('change',d3.forceManyBody()
+                                                  .strength(-500))
+                                .force('center', d3.forceCenter(width/2,height/2))
+                                .on('tick', tick);
+
+            let sizeScale = d3.scaleLinear()
+                            .domain(d3.extent(nodes, d => d.value))
+                            .range([10, 30]);
+
+            
+            let lines = svg.selectAll('line')
+                            .data(links)
+                            .join('line')
+                            .classed('link', true);
+
+            let circles = svg.selectAll('circle')
+                            .data(nodes)
+                            .join('circle')
+                            .classed('node',true)
+                            .style('fill', d => d.colour)
+                            .attr('r', d => sizeScale(d.value));
+            
+            let labels = svg.selectAll('text')
+                            .data(nodes)
+                            .join('text')
+                            .classed('node-label', true)
+                            .text(d => d.name)
+            
+            function tick() {
+                lines.attr('x1', d => d.source.x)
+                           .attr('y1', d => d.source.y)
+                           .attr('x2', d => d.target.x)
+                           .attr('y2', d => d.target.y);
+                circles.attr('cx', d => d.x)
+                     .attr('cy', d => d.y);
+                labels.attr('x', d => d.x)
+                      .attr('y', d => d.y);
+            }
+        }
+
+        
+            
+    </script>
+</html>

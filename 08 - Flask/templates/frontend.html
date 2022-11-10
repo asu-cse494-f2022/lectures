@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+ <html>
+    <head>
+        <title>Flask example</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" />
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            input[type=checkbox], input[type=number] {
+                margin-right:5px;
+            }
+            svg {
+                margin-top:20px;
+                width:100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div class='container'>
+            <div class='row'>
+                <h1 class='col-12  d-flex justify-content-center'>Penguin t-SNE</h1>
+                <p class='col-12'>
+                    Checked attributes are used when calculating the t-SNE layout.
+                </p>
+                <div class='col-6'>
+                    <input type='checkbox' checked id='culmen-length-checkbox' />
+                    <label>Culmen Length</label>
+                </div>
+                <div class='col-6'>
+                    <input type='checkbox' checked id='culmen-depth-checkbox' />
+                    <label>Culmen Depth</label>
+                </div>
+                <div class='col-6'>
+                    <input type='checkbox' id='body-mass-checkbox' />
+                    <label>Body mass</label>
+                </div>
+                <div class='col-6'>
+                    <input type='checkbox' id='flipper-length-checkbox' />
+                    <label>Flipper Length</label>
+                </div>  
+                <svg class='col-12'></svg>
+            </div>
+        </div>
+    </body>
+    <script>
+
+        // Get references to SVG and set dimension variables
+        let svg = d3.select('svg');
+        let width = svg.node().clientWidth;
+        let height = width * .75;
+        svg.style('height', height);    // set height of SVG to 75% of the width
+        let margin = { top: 50, left: 50, right: 50, bottom: 30};
+        let innerWidth = width-margin.left-margin.right;
+        let innerHeight = height-margin.top-margin.bottom;
+        
+        let g = svg.append('g')
+                    .attr('transform',`translate(${margin.left},${margin.top})`);
+
+
+        // This runs when the DOM objects (ie, html elements) are fully loaded
+        // (ie, when the page is loaded).
+        document.addEventListener("DOMContentLoaded", () => {
+
+            displayUpdated();
+        });
+
+        // When any of the checkboxes are clicked, or the number 
+        // in #clusters-ipnut changes, call displayUpdated().
+        d3.selectAll('input[type=checkbox').on('click', displayUpdated);
+        d3.selectAll('#clusters-input').on('change', displayUpdated);
+
+        /*
+            This function is called 
+                (1) at page load time
+                (2) when a checkbox is clicked, 
+                (3) when the cluster number changes
+            and does the following:
+                > Read current values for the checkboxes and cluster number
+                > make a fetch call (POST request) to the server with those values
+                > receive the response back:
+                > call drawtSNE() to update the scatterplot
+        */
+       // https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Asynchronous/Async_await
+        async function displayUpdated() {
+            console.log('trace:displayUpdated');
+
+            // Read current values from the HTML page and store in a JS object
+            params = { 
+                        culmenlengthChecked: d3.select('#culmen-length-checkbox').property('checked'),
+                        culmenDepthChecked: d3.select('#culmen-depth-checkbox').property('checked'),
+                        massChecked: d3.select('#body-mass-checkbox').property('checked'),
+                        flipperChecked: d3.select('#flipper-length-checkbox').property('checked'),
+                     }
+
+            
+            // Make a fetch POST request to the Flask server
+            const url = `${window.origin}/update-tsne`;
+            fetch(url, { 
+                            method: 'POST', 
+                            body: JSON.stringify(params),
+                            headers: new Headers({"content-type": "application/json"})
+            })
+            // Receive the response back
+            .then(response => {
+                if(response.status != 200) {
+                    console.log(`Looks like there was a problem. Status code: ${response.status}`)
+                    return;
+                }
+                response.json().then(data => {
+                    console.log(data);
+                    // call drawtSNE() to update the scatterplot
+                    drawtSNE(data);
+                })
+            })
+            .catch(error => {
+                console.log(`Fetch error: ${error}`);
+            });
+        }
+
+       
+
+        function drawtSNE(data) {
+            
+            let xScale = d3.scaleLinear()
+                            .domain(d3.extent(data, d => d.x))
+                            .range([0, innerWidth]);
+            let yScale = d3.scaleLinear()
+                            .domain(d3.extent(data, d => d.y))
+                            .range([innerHeight, 0]);
+
+            // extract the distinct species names for the color scale
+            let speciesNames = [... new Set(data.map(d => d.species))];
+            let colorScale = d3.scaleOrdinal(d3.schemePastel1)
+                                .domain(speciesNames)
+
+
+            // add the color key
+            g.selectAll('.color-key-square')
+                .data(speciesNames)
+                .join('rect')
+                .classed('color-key-square', true)
+                .attr('x', (d,i) => i*120)
+                .attr('y', -30)
+                .attr('width', 15)
+                .attr('height', 15)
+                .style('stroke','black')
+                .style('fill', d => colorScale(d));
+            g.selectAll('.color-key-label')
+                .data(speciesNames)
+                .join('text')
+                .classed('color-key-square', true)
+                .attr('x', (d,i) => 25 + i*120)
+                .attr('y', -22)
+                .style('alignment-baseline', 'central')
+                .text(d => d)
+
+            // clear and re-draw the axes every time this function is called
+            g.select('#axis-g').remove();
+            let axisG = g.append('g')
+                            .attr('id','axis-g')
+                            .lower();
+            
+            axisG.append('g').call(d3.axisLeft(yScale));
+            axisG.append('g').call(d3.axisBottom(xScale))
+                            .attr('transform',`translate(0,${innerHeight})`);
+            axisG.append('rect')
+                 .attr('width', innerWidth)
+                 .attr('height', innerHeight)
+                 .style('stroke','black')
+                 .style('stroke-width',0.5)
+                 .style('fill','none');
+            
+            // draw the points on the scatter plot
+            g.selectAll('circle')
+                .data(data, d => d.index)
+                .join(
+                    enter => {
+                        enter.append('circle')   
+                            .attr('r', 5)
+                            .style('stroke', 'black')
+                            .attr('fill', d => colorScale(d.species))
+                            .attr('cx', d => xScale(d.x))
+                            .attr('cy', d => yScale(d.y))
+                    },
+                    update => {
+                        update.call(update => update.transition()
+                                                    .delay((d,i) => i*2)
+                                                    .duration(500)
+                                                    .attr('cx', d => xScale(d.x))
+                                                    .attr('cy', d => yScale(d.y)));
+                    }
+                )
+        }
+
+    </script>
+</html>
