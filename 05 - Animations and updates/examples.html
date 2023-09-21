@@ -353,19 +353,10 @@
         
                     svg4.selectAll('text')
                         .data(data, d => d.abbrev)
-                        // .join('text')
-                        //     .attr('x', (d,i) => 20 + i * 40)
-                        //     .attr('y', 50)
-                        //     .text(d => d.abbrev);
-                        .join(
-                            enter => enter.append('text')
-                                            .attr('x', (d,i) => 20 + i * 40)
-                                            .attr('y', 50)
-                                            .text(d => d.abbrev),
-                            update => update // a group of objects in the "update bucket"
-                                        .attr('x', (d,i) => 20 + i * 40)
-                        );
-
+                        .join('text')
+                            .attr('x', (d,i) => 20 + i * 40)
+                            .attr('y', 50)
+                            .text(d => d.abbrev);
                 }
 
 
@@ -396,12 +387,10 @@
                         .join(
                             enter => enter.append('text')
                                           .style('fill','green')
-                                          .attr('x', 0)
+                                          .attr('x', (d,i) => 20 + i * 40)
                                           .attr('y', -20)
                                           .text(d => d.abbrev)
                                           .call(enter => enter.transition()
-                                                                .delay(2000)
-                                                              .attr('x', (d,i) => 20 + i * 40)
                                                               .attr('y',50)),
                             update => update
                                             .style('fill', 'black')
